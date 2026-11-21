@@ -20,7 +20,7 @@ namespace Loto.EditorTools
             GameObject model = PlaceMolino(machine);
             bool molino = model != null;
             // About 0.20 x 0.22 x 0.25 m once scaled: close to the 0.20 m cube the rest was measured against.
-            if (!molino) model = PlaceModel("machine-window", machine, 0.25f, 0.22f, 0f);
+            if (!molino) model = PlaceModel("machine-window", machine, RealScaleMachines ? 1.0f : 0.25f, RealScaleMachines ? 0.9f : 0.22f, 0f);
             if (model == null)
             {
                 Debug.LogWarning("[Loto] No machine model found: the machine stays a cube.");
@@ -29,7 +29,7 @@ namespace Loto.EditorTools
             body.GetComponent<MeshRenderer>().enabled = false;
 
             // Hazard stripes on the table under the machine: the danger zone made visible.
-            GameObject stripes = PlaceModel("indicator-special-lines", machine, 0.30f, 0.02f, 0f);
+            GameObject stripes = PlaceModel("indicator-special-lines", machine, RealScaleMachines ? 2.2f : 0.30f, 0.02f, 0f);
             if (stripes != null) stripes.transform.localPosition += new Vector3(0f, 0.001f, 0f);
 
             Bounds b = LocalBounds(machine, model);
@@ -105,7 +105,45 @@ namespace Loto.EditorTools
             // (behind the buttons): it shows at a glance that the lever feeds the machine.
             Transform board = machine.parent;
             EnergyFlow flow = null;
-            if (board != null)
+            if (RealScaleMachines)
+            {
+                // Readable from the table: the label and the lamp grow with the machine.
+                if (label != null) label.localScale = Vector3.one * 2.5f;
+                if (lamp != null) lamp.localScale = lamp.localScale * 3f;
+                // "PRUEBA DE ARRANQUE / NO ARRANCA" goes over the table, next to VERIFICAR, not 2 m up the press.
+                Transform tryOut = FindChild(machine, "TryOutLabel");
+                if (tryOut != null && board != null)
+                {
+                    tryOut.SetParent(board, false);
+                    tryOut.localPosition = new Vector3(0.36f, TableTop + 0.30f, 0.70f);
+                }
+            }
+            if (board != null && RealScaleMachines)
+            {
+                // Cable: from the switch box along the back of the table to its right edge, then down to the machine
+                // on the floor (CableLink keeps that last stretch joined when the board moves onto a real table).
+                Material rubber = MakeMaterial("Cable", "Universal Render Pipeline/Lit", new Color(0.06f, 0.06f, 0.07f), 0.35f);
+                float h = TableTop + 0.012f, backZ = TableDistance + TableSize.z / 2f - 0.04f, boxBack = LeverZ + SwitchBoxSize.z / 2f;
+                float edgeX = TableSize.x / 2f - 0.02f;
+                Cable(board, new Vector3(LeverX, h, boxBack), new Vector3(LeverX, h, backZ), rubber);
+                Cable(board, new Vector3(LeverX, h, backZ), new Vector3(edgeX, h, backZ), rubber);
+                Transform flowRoot = Group("EnergyFlow", board, Vector3.zero);
+                Transform p0 = Group("Path0", flowRoot, new Vector3(LeverX, h, boxBack));
+                Transform p1 = Group("Path1", flowRoot, new Vector3(LeverX, h, backZ));
+                Transform p2 = Group("Path2", flowRoot, new Vector3(edgeX, h, backZ));
+                Transform p3 = Group("CablePlug", machine, new Vector3(b.min.x + 0.06f, 0.10f, b.center.z));
+                GameObject drop = Part(PrimitiveType.Cylinder, "CableDrop", board, Vector3.zero, Vector3.one * 0.016f, rubber);
+                var link = drop.AddComponent<CableLink>();
+                link.from = p2;
+                link.to = p3;
+                link.thickness = 0.02f;
+                flow = flowRoot.gameObject.AddComponent<EnergyFlow>();
+                flow.lever = Object.FindAnyObjectByType<Lever>();
+                flow.path = new[] { p0, p1, p2, p3 };
+                flow.shaker = model.transform;
+                flow.shakeAmplitude = 0.003f;
+            }
+            else if (board != null)
             {
                 Material rubber = MakeMaterial("Cable", "Universal Render Pipeline/Lit", new Color(0.06f, 0.06f, 0.07f), 0.35f);
                 float h = TableTop + 0.012f, backZ = MachinePosition.z + b.max.z, boxBack = LeverZ + SwitchBoxSize.z / 2f;
@@ -130,8 +168,27 @@ namespace Loto.EditorTools
         public const string NeumaticaPath = "Assets/ThirdParty/Neumatica/Neumatica.fbx";
 
         const string HintMolino = "<b>ESPERA: TODAVÍA SE MUEVE</b>\nApagar no alcanza: la polea sigue girando por inercia.\nVerifica cuando esté quieta ({0} s).";
-        const string HintPrensa = "<b>ESPERA: TODAVÍA HAY PRESIÓN</b>\nApagar no alcanza: el aceite sigue empujando el pistón.\nVerifica cuando el manómetro marque 0 ({0} s).";
-        const string HintNeumatica = "<b>ESPERA: TODAVÍA HAY AIRE</b>\nApagar no alcanza: queda aire comprimido en la línea.\nVerifica cuando el manómetro marque 0 ({0} s).";
+        const string HintPrensa = "<b>ESPERA: TODAVÍA HAY PRESIÓN</b>\nApagar no alcanza: el aceite sigue empujando el pistón.\nToca PURGAR y verifica cuando el manómetro marque 0.";
+        const string HintNeumatica = "<b>ESPERA: TODAVÍA HAY AIRE</b>\nApagar no alcanza: queda aire comprimido en la línea.\nToca PURGAR y verifica cuando el manómetro marque 0.";
+
+        /// <summary>MÁQUINA (choose the scenario between attempts) and PURGAR (let the stored pressure out), on the
+        /// table where the small machine used to be. Only in the real-scale scene.</summary>
+        static partial void AddMachineButtons(Parts parts, DangerZone dangerZone)
+        {
+            if (!RealScaleMachines || dangerZone == null) return;
+            MachineSelector selector = dangerZone.transform.parent.GetComponent<MachineSelector>();
+            if (selector == null) return;
+            VerifyButton change = BuildButton(parts, "MachineButton", MachineButtonPosition, "MÁQUINA",
+                VerifyButton.ButtonAction.NextMachine, new Color(0.30f, 0.32f, 0.38f));
+            selector.buttonLabel = change.GetComponentInChildren<UnityEngine.UI.Text>(true);
+            if (selector.buttonLabel != null && selector.names != null && selector.names.Length > 0)
+                selector.buttonLabel.text = selector.names[0] + "\n<size=34>cambiar</size>";
+            VerifyButton bleed = BuildButton(parts, "BleedButton", BleedButtonPosition, "PURGAR",
+                VerifyButton.ButtonAction.Bleed, new Color(0.80f, 0.12f, 0.10f));
+            selector.bleedButton = bleed.gameObject;
+            bleed.gameObject.SetActive(false);   // the first machine (the mill) has no stored pressure
+            Debug.Log("[Loto] Real-scale machines on the floor: MÁQUINA and PURGAR buttons on the table.");
+        }
 
         /// <summary>
         /// The team's press and pneumatic station (Modelos/Prototipo1) next to the first machine, one shown at a time
@@ -145,8 +202,11 @@ namespace Loto.EditorTools
             if (dz == null || label == null || lamp == null) return;
             // The press is the tallest: 0.29 m keeps clear of the step pointer above the machine (0.25-0.31 is its band,
             // but it points at the front, and the press is narrow at the top).
-            GameObject prensa = PlaceTeamMachine(PrensaPath, "Model_Prensa", machine, "Bed", "Cylinder", 0.24f, 0.29f);
-            GameObject neumatica = PlaceTeamMachine(NeumaticaPath, "Model_Neumatica", machine, "Base", "CylinderBody", 0.27f, 0.27f);
+            // Real sizes from MODELOS-MAQUINAS-2-3.md: press 1.80 m, pneumatic station 1.20 m.
+            GameObject prensa = PlaceTeamMachine(PrensaPath, "Model_Prensa", machine, "Bed", "Cylinder",
+                RealScaleMachines ? 2.0f : 0.24f, RealScaleMachines ? 1.80f : 0.29f);
+            GameObject neumatica = PlaceTeamMachine(NeumaticaPath, "Model_Neumatica", machine, "Base", "CylinderBody",
+                RealScaleMachines ? 2.0f : 0.27f, RealScaleMachines ? 1.20f : 0.27f);
             if (prensa == null && neumatica == null) return;
 
             Transform holder = Group("Models", machine, Vector3.zero);
@@ -163,6 +223,7 @@ namespace Loto.EditorTools
             var machines = new System.Collections.Generic.List<GameObject> { firstGroup.gameObject };
             var names = new System.Collections.Generic.List<string> { molino ? "MOLINO" : "MÁQUINA" };
             var hints = new System.Collections.Generic.List<string> { HintMolino };
+            var pressure = new System.Collections.Generic.List<bool> { false };
             var labels = new System.Collections.Generic.List<Vector3> { label.localPosition };
             var lamps = new System.Collections.Generic.List<Vector3> { lamp.localPosition };
             Bounds all = LocalBounds(machine, firstGroup.gameObject);
@@ -179,7 +240,8 @@ namespace Loto.EditorTools
                 SetupSlider(machine, motion, FindChild(prensa.transform, "RamPivot"), 0.25f / 1.80f * b.size.y);
                 SetupNeedle(machine, motion, FindChild(prensa.transform, "GaugeNeedlePivot"), 180f);
                 SetupHandle(machine, motion, FindChild(prensa.transform, "BleedValvePivot"), Vector3.back, 90f);
-                machines.Add(prensa); names.Add("PRENSA"); hints.Add(HintPrensa);
+                motion.handleOnBleed = true;   // the red bleed knob opens on PURGAR
+                machines.Add(prensa); names.Add("PRENSA"); hints.Add(HintPrensa); pressure.Add(true);
                 labels.Add(LabelPlace(machine, prensa, b)); lamps.Add(LampPlace(b));
                 Debug.Log("[Loto] Team press added (" + b.size.ToString("F2") + " m).");
             }
@@ -194,7 +256,7 @@ namespace Loto.EditorTools
                 SetupSlider(machine, motion, FindChild(neumatica.transform, "RodPivot"), 0.15f / 1.20f * b.size.y);
                 SetupNeedle(machine, motion, FindChild(neumatica.transform, "GaugeNeedlePivot"), 150f);
                 SetupHandle(machine, motion, FindChild(neumatica.transform, "ValveHandlePivot"), Vector3.up, 90f);
-                machines.Add(neumatica); names.Add("NEUMÁTICA"); hints.Add(HintNeumatica);
+                machines.Add(neumatica); names.Add("NEUMÁTICA"); hints.Add(HintNeumatica); pressure.Add(true);
                 labels.Add(LabelPlace(machine, neumatica, b)); lamps.Add(LampPlace(b));
                 Debug.Log("[Loto] Team pneumatic station added (" + b.size.ToString("F2") + " m).");
             }
@@ -206,7 +268,13 @@ namespace Loto.EditorTools
                 zone.localPosition = all.center;
                 trigger.size = Vector3.Max(all.size + Vector3.one * 0.07f, new Vector3(0.27f, 0.28f, 0.27f));
             }
-            if (flow != null) flow.shaker = holder;
+            if (flow != null)
+            {
+                flow.shaker = holder;
+                // The cable plug follows the first machine's side; move it to the side of the widest one.
+                Transform plug = FindChild(machine, "CablePlug");
+                if (plug != null) plug.localPosition = new Vector3(all.min.x + 0.06f, 0.10f, all.center.z);
+            }
 
             var selector = machine.gameObject.AddComponent<MachineSelector>();
             selector.session = dz.session;
@@ -218,6 +286,9 @@ namespace Loto.EditorTools
             selector.label = label;
             selector.labelText = label.GetComponentInChildren<UnityEngine.UI.Text>(true);
             selector.lamp = lamp;
+            selector.zone = dz;
+            selector.holdsPressure = pressure.ToArray();
+            selector.advanceOnNewStudent = !RealScaleMachines;
             for (int i = 1; i < machines.Count; i++) machines[i].SetActive(false);
             Debug.Log("[Loto] " + machines.Count + " machines on the table; the next student gets the next one.");
         }
@@ -293,6 +364,9 @@ namespace Loto.EditorTools
         }
 
         public const string MolinoPath = "Assets/ThirdParty/Molino/Molino.fbx";
+        // Real scale: a workshop hammer mill about 1.1 m tall; on the table, 25 cm.
+        static float MolinoFootprint { get { return RealScaleMachines ? 1.30f : 0.27f; } }
+        static float MolinoHeight { get { return RealScaleMachines ? 1.10f : 0.25f; } }
 
         /// <summary>
         /// The team's hammer mill, scaled to the table and turned so its LabelPoint face looks at the user (-Z).
@@ -300,7 +374,7 @@ namespace Loto.EditorTools
         /// </summary>
         static GameObject PlaceMolino(Transform machine)
         {
-            GameObject m = PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, 0f, Quaternion.identity, true);
+            GameObject m = PlaceFbx(MolinoPath, "Model_Molino", machine, MolinoFootprint, MolinoHeight, 0f, Quaternion.identity, true);
             if (m == null) return null;
 
             // 1. Stand it up: the hopper must be on top. FBX files exported Z-up arrive lying on their side (seen 21/11:
@@ -316,7 +390,7 @@ namespace Loto.EditorTools
             if (upright != Quaternion.identity)
             {
                 Object.DestroyImmediate(m);
-                m = PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, 0f, upright, true);
+                m = PlaceFbx(MolinoPath, "Model_Molino", machine, MolinoFootprint, MolinoHeight, 0f, upright, true);
             }
 
             // 2. Face the user: the LabelPoint side looks at -Z.
@@ -329,7 +403,7 @@ namespace Loto.EditorTools
             float yaw = Vector3.SignedAngle(toLabel, Vector3.back, Vector3.up);
             if (Mathf.Abs(yaw) < 1f) return m;
             Object.DestroyImmediate(m);
-            return PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, yaw, upright, true);
+            return PlaceFbx(MolinoPath, "Model_Molino", machine, MolinoFootprint, MolinoHeight, yaw, upright, true);
         }
 
         public const string CandadoPath = "Assets/ThirdParty/Candado/Candado.fbx";

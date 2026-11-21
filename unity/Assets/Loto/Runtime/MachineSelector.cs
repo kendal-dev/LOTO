@@ -18,6 +18,12 @@ namespace Loto
         public Transform label;
         public UnityEngine.UI.Text labelText;
         public Transform lamp;
+        public DangerZone zone;
+        public bool[] holdsPressure;        // press and pneumatic station: the energy stays until PURGAR
+        public UnityEngine.UI.Text buttonLabel;   // the MÁQUINA button shows the machine's name
+        public GameObject bleedButton;      // PURGAR, only for the machines with stored pressure
+        [Tooltip("The next student gets the next machine (table-scale scenes). With the MÁQUINA button, off.")]
+        public bool advanceOnNewStudent = true;
 
         public int Current { get; private set; }
         int _student;
@@ -40,8 +46,11 @@ namespace Loto
         {
             if (session.studentNumber == _student) return;   // REINTENTAR: same student, same machine
             _student = session.studentNumber;
-            Next();
+            if (advanceOnNewStudent) Next();
         }
+
+        /// <summary>Before the first action of an attempt, or once it ended: never in the middle of one.</summary>
+        public bool CanSwitch { get { return session == null || session.Ended || session.Referee.History.Count == 0; } }
 
         public void Next()
         {
@@ -58,6 +67,11 @@ namespace Loto
             if (label != null && labelPositions != null && index < labelPositions.Length) label.localPosition = labelPositions[index];
             if (lamp != null && lampPositions != null && index < lampPositions.Length) lamp.localPosition = lampPositions[index];
             if (labelText != null && names != null && index < names.Length) labelText.text = names[index];
+            bool pressure = holdsPressure != null && index < holdsPressure.Length && holdsPressure[index];
+            if (zone != null) zone.holdsPressure = pressure;
+            if (bleedButton != null) bleedButton.SetActive(pressure);
+            if (buttonLabel != null && names != null && index < names.Length)
+                buttonLabel.text = names[index] + "\n<size=34>cambiar</size>";
             Debug.Log("[Loto] Machine on the table: " + (names != null && index < names.Length ? names[index] : index.ToString()));
         }
     }

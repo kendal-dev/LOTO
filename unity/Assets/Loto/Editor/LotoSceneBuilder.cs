@@ -36,6 +36,7 @@ namespace Loto.EditorTools
         static partial void BuildHands(Parts parts);
         static partial void DressMachine(Transform machine, GameObject body);
         static partial void DressPadlock(Transform padlock);
+        static partial void AddMachineButtons(Parts parts, DangerZone dangerZone);
 
         public const string ScenePath = "Assets/Loto/Scenes/Loto.unity";
         public const string DesktopScenePath = "Assets/Loto/Scenes/LotoDesktop.unity";
@@ -74,6 +75,16 @@ namespace Loto.EditorTools
         /// <summary>The machine is 0.72 m to the right of the lever (the brief asks for 0.25 m or more).</summary>
         public static readonly Vector3 MachinePosition = new Vector3(0.36f, TableTop, 0.60f);
         public const float MachineSide = 0.20f;
+
+        /// <summary>
+        /// Real-scale machines on the real floor beside the table (FloorStand), instead of 25 cm models on it. The
+        /// table keeps the switch, the padlock and the buttons (the control station); MÁQUINA and PURGAR take the
+        /// machine's old place on the table. false = the table-scale scene of 21/11 morning.
+        /// </summary>
+        public const bool RealScaleMachines = true;
+        public static readonly Vector3 MachineFloorPosition = new Vector3(1.35f, 0f, 0.85f);
+        public static readonly Vector3 MachineButtonPosition = new Vector3(0.36f, TableTop, 0.42f);
+        public static readonly Vector3 BleedButtonPosition = new Vector3(0.36f, TableTop, 0.62f);
 
         public static readonly Vector3 PanelCenter = new Vector3(0f, 1.55f, 1.60f);
         public static readonly Vector3 DesktopEye = new Vector3(0f, 1.50f, -0.90f);
@@ -149,6 +160,7 @@ namespace Loto.EditorTools
             BuildButton(parts, "RetryButton", RetryButtonPosition, "REINTENTAR",
                 VerifyButton.ButtonAction.Retry, new Color(0.12f, 0.35f, 0.75f));
             DangerZone dangerZone = BuildMachine(parts);
+            AddMachineButtons(parts, dangerZone);   // LotoSceneBuilder.Models.cs: MÁQUINA and PURGAR (real-scale scene)
             StatusPanel panel = BuildPanel(parts);
             BuildStepPointer(parts, verifyButton, dangerZone);
             parts.leftTip = BuildFingerTip("FingerTipLeft", "Left");
@@ -381,7 +393,8 @@ namespace Loto.EditorTools
             Material bladeMaterial = MakeMaterial("Blade", "Universal Render Pipeline/Lit", new Color(0.95f, 0.45f, 0.05f), 0.3f);
             Material darkMaterial = MakeMaterial("Dark", "Universal Render Pipeline/Lit", new Color(0.10f, 0.10f, 0.12f), 0.2f);
 
-            Transform machine = Group("Machine", parts.board, MachinePosition);
+            Transform machine = Group("Machine", parts.board, RealScaleMachines ? MachineFloorPosition : MachinePosition);
+            if (RealScaleMachines) machine.gameObject.AddComponent<FloorStand>();
             GameObject body = Part(PrimitiveType.Cube, "Body", machine, new Vector3(0f, MachineSide / 2f, 0f), Vector3.one * MachineSide, machineMaterial);
             Label(machine, "MachineLabel", "MÁQUINA", new Vector3(0f, MachineSide / 2f, -MachineSide / 2f - 0.0015f),
                 Quaternion.identity, 360, 100, 0.18f, 66, Color.white);
@@ -489,7 +502,9 @@ namespace Loto.EditorTools
             Wire(pointer, "target1", FindChild(parts.lever.transform, "Knob"));
             Wire(pointer, "target2", parts.padlock.transform);
             Wire(pointer, "target3", verifyButton.transform);
-            Wire(pointer, "target4", dangerZone.transform.parent);
+            // The machine's label (on its front plate, wherever MachineSelector puts it): the machine root is on the floor.
+            Transform machineLabel = FindChild(dangerZone.transform.parent, "MachineLabel");
+            Wire(pointer, "target4", machineLabel != null ? machineLabel : dangerZone.transform.parent);
             visual.gameObject.SetActive(false);
         }
 

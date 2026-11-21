@@ -11,7 +11,7 @@ namespace Loto
     /// </summary>
     public class VerifyButton : MonoBehaviour
     {
-        public enum ButtonAction { Verify, Retry, ToggleLever, TogglePadlock }
+        public enum ButtonAction { Verify, Retry, ToggleLever, TogglePadlock, NextMachine, Bleed }
 
         public LotoSession session;
         public ButtonAction action = ButtonAction.Verify;
@@ -78,6 +78,24 @@ namespace Loto
             else if (action == ButtonAction.Retry)
             {
                 if (session.Ended) session.RetryOrNext();
+            }
+            else if (action == ButtonAction.NextMachine)
+            {
+                if (_selector == null) return;
+                if (_selector.CanSwitch) _selector.Next();
+                else if (_panel != null)
+                    _panel.ShowHint("<b>TERMINA ESTE INTENTO</b>\nLa máquina se cambia antes de empezar o al terminar.", 2.5f);
+            }
+            else if (action == ButtonAction.Bleed)
+            {
+                if (_machine == null) return;
+                if (_machine.Bleed())
+                {
+                    Debug.Log("[Loto] Bleed: stored pressure released.");
+                    if (_panel != null) _panel.ShowHint("<b>PURGANDO</b>\nSale la presión guardada: mira el manómetro bajar a 0.", 2.5f);
+                }
+                else if (_panel != null)
+                    _panel.ShowHint("<b>PRIMERO APAGA</b>\nCon la energía puesta, purgar no sirve: la presión vuelve.", 2.5f);
             }
             else if (action == ButtonAction.ToggleLever && lever != null)
             {

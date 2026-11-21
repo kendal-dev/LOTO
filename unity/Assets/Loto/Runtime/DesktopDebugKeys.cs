@@ -47,6 +47,12 @@ namespace Loto
             }
             if (keyboard.rKey.wasPressedThisFrame && session.Ended) session.RetryOrNext();
             if (keyboard.nKey.wasPressedThisFrame) session.ResetAttempt(true);
+            if (keyboard.mKey.wasPressedThisFrame)
+            {
+                MachineSelector selector = Object.FindAnyObjectByType<MachineSelector>();
+                if (selector != null && selector.CanSwitch) selector.Next();
+            }
+            if (keyboard.pKey.wasPressedThisFrame && dangerZone != null) dangerZone.Bleed();
         }
     }
 }

@@ -26,6 +26,8 @@ namespace Loto
         public Transform handle;
         public Vector3 handleAxis = Vector3.up;
         public float handleAngle = 90f;
+        [Tooltip("The handle is a bleed valve: it opens on PURGAR instead of closing with the lever.")]
+        public bool handleOnBleed;
 
         Vector3 _slideRest;
         Quaternion _needleRest, _handleRest;
@@ -43,7 +45,10 @@ namespace Loto
             float energy = zone != null ? zone.Speed : 0f;
             if (slider != null)
             {
-                _phase += Time.deltaTime * cyclesPerSecond * energy * 2f * Mathf.PI;
+                // The pump or the compressor drives the stroke only while the lever is up; the stored pressure then
+                // holds the ram where it stopped until PURGAR lets it out.
+                bool motorOn = lever == null || !lever.IsOff;
+                if (motorOn) _phase += Time.deltaTime * cyclesPerSecond * 2f * Mathf.PI;
                 float down = (0.5f - 0.5f * Mathf.Cos(_phase)) * energy;
                 slider.localPosition = _slideRest + slideOffset * down;
             }
@@ -51,7 +56,7 @@ namespace Loto
                 needle.localRotation = _needleRest * Quaternion.AngleAxis(-needleAngle * energy, needleAxis);
             if (handle != null)
             {
-                bool closed = lever != null && lever.IsOff;
+                bool closed = handleOnBleed ? zone != null && zone.Bled : lever != null && lever.IsOff;
                 _closed = Mathf.MoveTowards(_closed, closed ? 1f : 0f, Time.deltaTime / 0.4f);
                 handle.localRotation = _handleRest * Quaternion.AngleAxis(handleAngle * _closed, handleAxis);
             }
