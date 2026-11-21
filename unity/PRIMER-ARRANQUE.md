@@ -37,7 +37,10 @@ Escrito el viernes 20/11, 15:00. **Unity todavía no abrió este proyecto ni una
    Instalar a mano: `adb install -r Builds\loto.apk`.
 9. Dirección del servidor en el visor (la app se abre una vez antes, para que exista la carpeta):
    `adb shell "echo http://IP-DE-LA-LAPTOP:3000 > /sdcard/Android/data/com.equipo.lotoxr/files/server.txt"`
-   El registro de la app: `adb pull /sdcard/Android/data/com.equipo.lotoxr/files/loto.log`.
+   La app lee `server.txt` una sola vez, al arrancar (`AttemptSender.Awake`): después de escribirlo, cerrarla con
+   `adb shell am force-stop com.equipo.lotoxr` y abrirla de nuevo.
+   El registro de la app: `adb pull /sdcard/Android/data/com.equipo.lotoxr/files/loto.log`. La línea
+   `[Loto] Server:` tiene que mostrar la IP de la laptop.
 
 La escena se rehace siempre con el menú. No se edita `Loto.unity` a mano.
 

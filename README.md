@@ -1,7 +1,7 @@
 # Simulador LOTO en realidad mixta
 
 **Práctica de bloqueo y etiquetado (LOTO, *lockout/tagout*) para estudiantes de taller, en Meta Quest 3.**
-La máquina aparece sobre una mesa del propio taller (realidad mixta, no un mundo virtual) y el docente ve cada
+La máquina aparece en el aula real, sin aislar al estudiante en un mundo virtual (realidad mixta) y el docente ve cada
 intento en vivo desde un panel web.
 
 Proyecto del hackathon **Abstracthon 2026** (Microsoft Learn Student Ambassadors Bolivia, 21-22/11/2026),
@@ -12,15 +12,13 @@ track Educación. Equipo de Santa Cruz de la Sierra: Daniel, Denzel y Orlando. [
 ## El problema
 
 El bloqueo y etiquetado es el procedimiento que evita que una máquina se encienda mientras alguien la está
-reparando o limpiando. Se enseña sobre todo con teoría, y el fallo típico no es no saber los pasos, sino no
-tener el hábito de hacerlos en orden.
+reparando o limpiando. Creemos que lo que falta es el hábito de hacer los pasos en orden, y el hábito se entrena.
 
 - **Bolivia:** en 2024 el Ministerio de Trabajo recibió **12.210 denuncias de accidentes de trabajo**:
   **79 fatales**, **7 en Santa Cruz**. Es el total de accidentes, no solo los de falta de bloqueo.
 - **EE. UU. (OSHA):** cumplir el estándar de bloqueo previene unas **120 muertes y 50.000 lesiones por año**
   ([hoja informativa de OSHA](https://www.osha.gov/sites/default/files/publications/OSHAFS3529.pdf)).
-- **EE. UU. (CDC/NIOSH):** en 592 incidentes fatales en manufactura, en el **58,8 %** de las muertes **no se
-  intentó ningún bloqueo** ([CDC Stacks](https://stacks.cdc.gov/view/cdc/186886/cdc_186886_DS1.pdf)).
+- **EE. UU.:** un estudio de 592 accidentes fatales de bloqueo en fábricas de EE. UU. (datos de 1984 a 1997) encontró que en el **58,8 %** **no se intentó ningún bloqueo** ([Bulzacchelli et al., 2008, estudio financiado por NIOSH](https://stacks.cdc.gov/view/cdc/186886/cdc_186886_DS1.pdf)).
 - **Bolivia (COMIBOL):** su reglamento de seguridad de 2023 dice que *«el bloqueo de la fuente de energía será
   retirado por la persona que lo colocó»*
   ([reglamento](https://www.comibol.gob.bo/images/noticias/REGLAMENTO%20DE%20NORMAS%20BASICAS%20DE%20SST%20GESTION%202023%20Enviado%20.pdf)).
@@ -50,7 +48,7 @@ llega a un **panel web** donde el docente ve quién completó, en qué paso se e
 | **La prueba de arranque** | Al apretar VERIFICAR suena un «clac» seco, la lámpara parpadea y sale **PRUEBA DE ARRANQUE · NO ARRANCA** |
 | **El final** | Tres notas y el panel en verde al completar. Un zumbador y el panel en rojo si toca la máquina antes |
 | **El repaso del error** | El panel marca en rojo el paso que se saltó, «(TE LO SALTASTE)», y abajo muestra **«Tu orden: …»** con lo que hizo |
-| **La guía al reintentar** | Un alfiler señala el paso que falta. **No aparece en el primer intento**, para que ese intento mida lo que sabe |
+| **La guía después del error** | Antes de equivocarse no hay guía. Desde el primer error (el que frena o un aviso amarillo), un alfiler señala el paso que falta. |
 
 Todo se arma con figuras simples de colores y sonidos generados por código: el proyecto **no usa modelos 3D,
 texturas ni audio de terceros**. Los materiales son opacos para no abrir huecos en el passthrough.
@@ -66,10 +64,10 @@ Revisamos los simuladores de bloqueo que hay en el mercado: Ludus Global (Españ
 PIXO VR, EHS VR, iQ3Connect, NxtTech, Roundtable Learning, Linde LVA y uno en Steam. **Todos son de realidad
 virtual cerrada** (el estudiante está en una planta virtual) y se venden a empresas por cotización.
 
-- **Realidad mixta en el taller real:** en los que revisamos, ninguno pone la máquina sobre la mesa del propio taller.
+- **Realidad mixta en el taller real:** en los que revisamos, ninguno pone la máquina en el aula real, sin aislar al estudiante en un mundo virtual.
 - **La guía aparece solo después del error**, en vez de separar «modo guiado» y «modo examen».
 - **El docente ve la clase en vivo**, sin un sistema de gestión de aprendizaje (LMS).
-- **La tarjeta lleva el nombre de quien bloqueó**, como pide el reglamento de COMIBOL.
+- **La tarjeta dice quién bloqueó y a qué hora**, porque el reglamento de COMIBOL (2023) dice que el bloqueo lo retira quien lo colocó.
 
 Ya hay formación técnica inmersiva en la región: Yoy Simulators trabaja con Duoc UC (Chile) con más de 3.000
 estudiantes y Meta Quest ([nota del 21/01/2026](https://www.mineriayfuturo.cl/noticias/chile-impulsa-el-mayor-proyecto-de-capacitacion-tecnica-virtual-de-latinoamerica-con-realidad-virtual/)),
@@ -214,7 +212,7 @@ antes de que empezara el evento:
 - El proyecto de Unity (paquetes y ajustes copiados de un proyecto anterior para Quest 3) y los scripts del visor
   en `unity/Assets/Loto/Runtime/`.
 - El 20/11 a la noche: los arreglos de la palanca, el candado y la locomoción del rig, y cuatro funciones (sonido y
-  energía visible, tarjeta de bloqueo, repaso del error y guía al reintentar).
+  energía visible, tarjeta de bloqueo, repaso del error y guía después del error).
 - Este README, el plan del fin de semana y las reglas de trabajo del repositorio.
 
 Esa base se escribió con ayuda de asistentes de IA (ver abajo).
@@ -224,7 +222,7 @@ Esa base se escribió con ayuda de asistentes de IA (ver abajo).
 ## Uso de IA
 
 - **Para escribir el código:** Claude Code escribió la mayor parte del código y de los documentos. El equipo eligió
-  la idea, decidió qué entra y qué no, probó en Unity y en el visor, y aprobó cada cambio. Codex (OpenAI) hizo
+  la idea, decidió qué entra y qué no, probó en Unity y aprobó cada cambio. La prueba en el visor está pendiente. Codex (OpenAI) hizo
   revisiones adversariales del plan y del código. [PENDIENTE: completar con lo que se use durante el evento]
 - **Para investigar:** Gemini Deep Research (vía NotebookLM) y Grok para el panorama de simuladores existentes y los
   datos de impacto. Cada dato se revisó contra su fuente antes de usarlo; lo que no tenía fuente se descartó.
