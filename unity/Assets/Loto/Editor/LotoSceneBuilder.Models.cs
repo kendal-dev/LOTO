@@ -29,7 +29,7 @@ namespace Loto.EditorTools
             body.GetComponent<MeshRenderer>().enabled = false;
 
             // Hazard stripes on the table under the machine: the danger zone made visible.
-            GameObject stripes = PlaceModel("indicator-special-lines", machine, 0.34f, 0.02f, 0f);
+            GameObject stripes = PlaceModel("indicator-special-lines", machine, 0.30f, 0.02f, 0f);
             if (stripes != null) stripes.transform.localPosition += new Vector3(0f, 0.001f, 0f);
 
             Bounds b = LocalBounds(machine, model);
@@ -133,6 +133,24 @@ namespace Loto.EditorTools
         {
             GameObject m = PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, 0f, Quaternion.identity, true);
             if (m == null) return null;
+
+            // 1. Stand it up: the hopper must be on top. FBX files exported Z-up arrive lying on their side (seen 21/11:
+            //    the prototype came in tipped over), so the part names decide which way is up, not the file's axes.
+            Quaternion upright = Quaternion.identity;
+            Transform hopper = FindChild(m.transform, "Hopper");
+            if (hopper != null)
+            {
+                Vector3 toHopper = LocalBounds(machine, hopper.gameObject).center - LocalBounds(machine, m).center;
+                Vector3 axis = DominantAxis(toHopper);
+                if (axis != Vector3.up) upright = Quaternion.FromToRotation(axis, Vector3.up);
+            }
+            if (upright != Quaternion.identity)
+            {
+                Object.DestroyImmediate(m);
+                m = PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, 0f, upright, true);
+            }
+
+            // 2. Face the user: the LabelPoint side looks at -Z.
             Transform labelPoint = FindChild(m.transform, "LabelPoint");
             if (labelPoint == null) return m;
             Bounds b = LocalBounds(machine, m);
@@ -142,7 +160,16 @@ namespace Loto.EditorTools
             float yaw = Vector3.SignedAngle(toLabel, Vector3.back, Vector3.up);
             if (Mathf.Abs(yaw) < 1f) return m;
             Object.DestroyImmediate(m);
-            return PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, yaw, Quaternion.identity, true);
+            return PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, yaw, upright, true);
+        }
+
+        /// <summary>The signed unit axis (±X, ±Y, ±Z) closest to v.</summary>
+        static Vector3 DominantAxis(Vector3 v)
+        {
+            float ax = Mathf.Abs(v.x), ay = Mathf.Abs(v.y), az = Mathf.Abs(v.z);
+            if (ay >= ax && ay >= az) return v.y >= 0f ? Vector3.up : Vector3.down;
+            if (ax >= az) return v.x >= 0f ? Vector3.right : Vector3.left;
+            return v.z >= 0f ? Vector3.forward : Vector3.back;
         }
 
         /// <summary>A straight cable (opaque cylinder, no collider) between two board-local points.</summary>
