@@ -158,8 +158,10 @@ namespace Loto.EditorTools
 
             Bounds b = LocalBounds(parent, model);
             float footprint = Mathf.Max(b.size.x, b.size.z);
-            if (footprint < 0.0001f || b.size.y < 0.0001f) return model;
-            float k = Mathf.Min(maxFootprint / footprint, maxHeight / b.size.y);
+            // Flat models (the hazard stripes are a plane: height 0) still scale by their footprint (seen 21/11 in the Quest:
+            // unscaled stripes crossed the whole table).
+            if (footprint < 0.0001f) return model;
+            float k = Mathf.Min(maxFootprint / footprint, maxHeight / Mathf.Max(b.size.y, 0.0001f));
             model.transform.localScale = Vector3.one * k;
             b = LocalBounds(parent, model);
             model.transform.localPosition -= new Vector3(b.center.x, b.min.y, b.center.z);
