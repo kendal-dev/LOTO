@@ -29,3 +29,6 @@
 - **Web ↔ Visor:** ninguno directo. El visor manda; el panel lee cada 2 segundos.
 - **Web ↔ Presentación:** el panel aparece en vivo en la lámina 4 y en el video; la página del proyecto puede
   enlazar la presentación y el video.
+
+
+regresa valeria;
