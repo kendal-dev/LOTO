@@ -392,6 +392,9 @@ namespace Loto.EditorTools
             Text tryOut = Label(machine, "TryOutLabel", "PRUEBA DE ARRANQUE\nNO ARRANCA", new Vector3(0f, MachineSide + 0.20f, 0f),
                 Quaternion.identity, 760, 160, 0.38f, 56, new Color(0.49f, 0.88f, 0.54f));
             GameObject tryOutCanvas = tryOut.transform.parent.gameObject;
+            // Opaque plate behind the text (canvas pixels, 3 mm back): Loto/UI never writes alpha, so without it the
+            // label is added over passthrough and washes out on a bright wall (audit 21/11, C3). Hidden with the canvas.
+            Part(PrimitiveType.Quad, "TryOutPlate", tryOutCanvas.transform, new Vector3(0f, 0f, 6f), new Vector3(760f, 160f, 1f), darkMaterial);
 
             // The part that turns while there is energy (DangerZone spins it around its local Y).
             Transform spinner = Group("Spinner", machine, new Vector3(0f, MachineSide + 0.015f, 0f));
