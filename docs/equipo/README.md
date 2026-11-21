@@ -38,7 +38,6 @@ Hackathon **Abstracthon 2026** (Santa Cruz). Criterios: Innovación 40 · Viabil
 | Denzel | El servidor (API) y la entrega |
 | Desarrollador web (nuevo) | El panel del docente y la página del proyecto ([`TAREAS-WEB.md`](TAREAS-WEB.md)) |
 | Orlando | Pruebas con personas, tiempos, fotos |
-| Claude (IA) | Código del visor, documentos, presentación. Codex revisa en contra |
 
 ## Reglas de la casa (cortas)
 
@@ -46,7 +45,7 @@ Hackathon **Abstracthon 2026** (Santa Cruz). Criterios: Innovación 40 · Viabil
    [`docs/CONTRATO.md`](../CONTRATO.md): si algo de la API tiene que cambiar, se cambia primero ahí y se avisa.
 2. **Se dice solo lo que la app hace.** Nada de datos inventados en pantalla: si no hay intentos, se muestra vacío.
 3. **Ninguna clave en el repo** (van en `.env`, que está ignorado).
-4. **Commits chicos**, con mensaje que diga qué se hizo. Sin coautores de IA en el mensaje.
+4. **Commits chicos**, con mensaje que diga qué se hizo.
 5. **Sin librerías pesadas ni dependencias nuevas** salvo que haga falta de verdad: el panel corre sin internet
    (en el evento el WiFi puede fallar).
 

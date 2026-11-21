@@ -65,4 +65,4 @@ servicios externos (un generador de QR en JS incluido en el repo, o una imagen h
 
 1. Rama propia (`web/w1-panel`, etc.) o commits chicos en `main` si lo acordás con Daniel.
 2. Probar con `node server-mock/server.js` y los `curl` del contrato.
-3. Avisar a Daniel con una captura. Codex o Claude pueden hacer una revisión en contra antes de juntar.
+3. Avisar a Daniel con una captura para revisarlo antes de juntar.
