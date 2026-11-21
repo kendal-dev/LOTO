@@ -180,9 +180,7 @@ unity/                 Proyecto de Unity
 core-tests/            Pruebas de la lógica (consola .NET)
 server-mock/           Servidor de prueba en Node con el panel del docente
 docs/CONTRATO.md       Contrato HTTP visor ↔ servidor
-docs/PLAN.md           Plan del fin de semana, criterios del jurado y pitch
-docs/GUION-PITCH.md    Guion del pitch de 4 minutos (y PREGUNTAS-JURADO, DIAPOSITIVAS, VIDEO-RESPALDO, PRUEBAS-USUARIOS)
-docs/AUDITORIA-FABLE.md  Cómo auditar el proyecto y con qué herramientas
+docs/equipo/           Módulos, dueños y tareas del equipo
 ```
 
 ## Estado (20/11/2026, noche)

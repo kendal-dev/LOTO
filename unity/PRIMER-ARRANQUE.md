@@ -18,7 +18,7 @@ Escrito el viernes 20/11, 15:00. **Unity todavía no abrió este proyecto ni una
 ## 2. Pasos
 
 1. **Cerrar** el navegador y todas las apps. **Enchufar** la laptop (no desenchufar con Unity abierto).
-2. Unity Hub → Add → carpeta `C:\Users\kevin\abstracthon-loto\unity` → abrir con **6000.4.6f1**.
+2. Unity Hub → Add → carpeta `unity` del repo → abrir con **6000.4.6f1**.
    Si Unity se cae con `d3d12: device removed`, abrirlo con el argumento `-force-d3d11` (pasó en Walkback).
 3. Esperar la importación: **10 a 20 minutos** (no hay carpeta `Library`). No cambiar de ventana.
    Si aparece un cartel de Meta (Project Setup Tool, OpenXR), cerrarlo sin aplicar nada.
