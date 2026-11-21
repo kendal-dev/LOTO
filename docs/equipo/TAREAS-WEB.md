@@ -45,11 +45,11 @@ bien y dónde falla la clase, y se ve bien a 1280×720 compartido en Meet.
 ## W4 · Página pública del proyecto (≈ 1,5 h, puede seguir el domingo hasta las 12:30)
 
 **Dónde:** carpeta nueva `web/` (un `index.html` + estilos), para publicar en GitHub Pages desde el repo.
-- Secciones: el problema (solo los datos de `docs/PLAN.md` §2.3.2, con su fuente y país), cómo funciona (los 4
+- Secciones: el problema (solo los datos del `README.md`, con su fuente y país), cómo funciona (los 4
   pasos), la demo (espacio para el video del domingo y capturas del visor), qué tiene de distinto, el equipo, y
   enlaces al repo y a la presentación.
-- Textos: copiar de `README.md` y `docs/GUION-PITCH.md`, **sin agregar cifras ni adjetivos** («único», «primeros»
-  y «no existe» están prohibidos; ver `docs/PLAN.md` §2.3.1).
+- Textos: copiar del `README.md`, **sin agregar cifras ni adjetivos** («único», «primeros» y «no existe» están
+  prohibidos: se dice «no encontramos»). Daniel tiene el guion del pitch si hace falta una frase.
 - Imágenes: capturas reales del visor cuando las haya; mientras, sin imágenes inventadas.
 
 **Terminado cuando:** se abre desde el celular, se entiende en 30 segundos y no dice nada que la app no haga.

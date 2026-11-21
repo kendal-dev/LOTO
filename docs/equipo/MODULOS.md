@@ -19,8 +19,8 @@
 | **Servidor** (API) | `server/` (Denzel) o `server-mock/server.js` | `POST/GET/DELETE /api/attempts`, CSV, textos de error | Denzel | El de prueba anda; el definitivo lo decide Denzel |
 | **Panel del docente** | `server-mock/public/index.html` (o el de `server/`) | Lo que el docente y el jurado ven en pantalla grande | **Desarrollador web** | Funciona, pero sin diseño de producto |
 | **Página del proyecto** | `web/` (nueva) | Página pública para el jurado: problema, demo, equipo | **Desarrollador web** | No existe |
-| **Presentación** | `pitch/presentacion/` | 8 láminas con el tablero en 3D (three.js, sin internet) | Daniel | Lista; se ajusta con los resultados del sábado |
-| **Pitch y documentos** | `docs/` | Guion, preguntas del jurado, diapositivas, video, pruebas | Daniel | Listos y revisados |
+| **Presentación** | local de Daniel (no está en el repo) | 8 láminas con el tablero en 3D (three.js, sin internet) | Daniel | Lista; se ajusta con los resultados del sábado |
+| **Pitch y documentos** | locales de Daniel (no están en el repo) | Guion, preguntas del jurado, diapositivas, video, pruebas | Daniel | Listos y revisados |
 
 ## Puntos de contacto entre módulos
 
