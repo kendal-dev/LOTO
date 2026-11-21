@@ -239,17 +239,22 @@ namespace Loto.EditorTools
                 Object.DestroyImmediate(m);
                 m = PlaceFbx(path, objectName, machine, footprint, height, 0f, upright, true);
             }
+            // Both machines are wider (X) than deep (Z) in real life: the wide side goes across the table. The label
+            // plate can sit off to one side (the press's is on the pump), so it only decides front or back (seen 21/11:
+            // snapping to the plate's direction turned both machines a quarter turn).
+            Bounds b = LocalBounds(machine, m);
+            float yaw = b.size.z > b.size.x ? 90f : 0f;
+            if (yaw != 0f)
+            {
+                Object.DestroyImmediate(m);
+                m = PlaceFbx(path, objectName, machine, footprint, height, yaw, upright, true);
+            }
             Transform labelPoint = FindChild(m.transform, "LabelPoint");
             if (labelPoint == null) return m;
-            Bounds b = LocalBounds(machine, m);
-            Vector3 toLabel = machine.InverseTransformPoint(labelPoint.position) - b.center;
-            toLabel.y = 0f;
-            if (toLabel.sqrMagnitude < 0.000001f) return m;
-            // Snapped to a quarter turn: the plate is on one face of the machine.
-            float yaw = Vector3.SignedAngle(DominantAxis(toLabel), Vector3.back, Vector3.up);
-            if (Mathf.Abs(yaw) < 1f) return m;
+            b = LocalBounds(machine, m);
+            if (machine.InverseTransformPoint(labelPoint.position).z <= b.center.z) return m;   // plate already toward the user (-Z)
             Object.DestroyImmediate(m);
-            return PlaceFbx(path, objectName, machine, footprint, height, yaw, upright, true);
+            return PlaceFbx(path, objectName, machine, footprint, height, yaw + 180f, upright, true);
         }
 
         static void SetupSlider(Transform machine, MachineMotion motion, Transform pivot, float stroke)
