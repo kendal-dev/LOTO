@@ -21,6 +21,8 @@ namespace Loto
 
         /// <summary>True while the moving part still turns, also during the coast after the lever went down.</summary>
         public bool Moving { get { return _speed > 0.01f; } }
+        /// <summary>The machine's energy level: 1 with the lever up, falling to 0 during the coast (MachineMotion reads it).</summary>
+        public float Speed { get { return _speed; } }
         /// <summary>Seconds left until the coast ends (0 when stopped).</summary>
         public float SecondsToStop { get { return _speed * coastSeconds; } }
 

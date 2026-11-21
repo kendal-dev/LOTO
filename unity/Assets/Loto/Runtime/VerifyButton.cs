@@ -28,6 +28,7 @@ namespace Loto
         Collider _collider;
         DangerZone _machine;
         StatusPanel _panel;
+        MachineSelector _selector;
 
         void Awake()
         {
@@ -41,6 +42,7 @@ namespace Loto
         {
             _machine = Object.FindAnyObjectByType<DangerZone>();
             _panel = Object.FindAnyObjectByType<StatusPanel>();
+            _selector = Object.FindAnyObjectByType<MachineSelector>();
             Refresh();
         }
 
@@ -64,9 +66,10 @@ namespace Loto
                 // Referee already answers with its own error).
                 if (_machine != null && _machine.Moving && _machine.lever != null && _machine.lever.IsOff && !session.Ended)
                 {
+                    string hint = _selector != null && !string.IsNullOrEmpty(_selector.Hint) ? _selector.Hint
+                        : "<b>ESPERA: TODAVÍA SE MUEVE</b>\nApagar no alcanza: la polea sigue girando por inercia.\nVerifica cuando esté quieta ({0} s).";
                     if (_panel != null)
-                        _panel.ShowHint("<b>ESPERA: TODAVÍA SE MUEVE</b>\nApagar no alcanza: la polea sigue girando por inercia.\nVerifica cuando esté quieta (" +
-                            Mathf.CeilToInt(_machine.SecondsToStop) + " s).", 2.5f);
+                        _panel.ShowHint(hint.Replace("{0}", Mathf.CeilToInt(_machine.SecondsToStop).ToString()), 2.5f);
                     Debug.Log("[Loto] Verify while the machine still coasts: not reported, hint shown.");
                     return;
                 }

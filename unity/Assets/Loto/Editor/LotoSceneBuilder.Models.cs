@@ -104,6 +104,7 @@ namespace Loto.EditorTools
             // The power cable from the back of the switch box to the back of the machine, along the back of the table
             // (behind the buttons): it shows at a glance that the lever feeds the machine.
             Transform board = machine.parent;
+            EnergyFlow flow = null;
             if (board != null)
             {
                 Material rubber = MakeMaterial("Cable", "Universal Render Pipeline/Lit", new Color(0.06f, 0.06f, 0.07f), 0.35f);
@@ -116,11 +117,174 @@ namespace Loto.EditorTools
                 Transform p0 = Group("Path0", flowRoot, new Vector3(LeverX, h, boxBack));
                 Transform p1 = Group("Path1", flowRoot, new Vector3(LeverX, h, backZ));
                 Transform p2 = Group("Path2", flowRoot, new Vector3(MachinePosition.x, h, backZ));
-                var flow = flowRoot.gameObject.AddComponent<EnergyFlow>();
+                flow = flowRoot.gameObject.AddComponent<EnergyFlow>();
                 flow.lever = Object.FindAnyObjectByType<Lever>();
                 flow.path = new[] { p0, p1, p2 };
                 flow.shaker = model.transform;
             }
+
+            AddTeamMachines(machine, model, molino, label, lamp, zone, trigger, flow);
+        }
+
+        public const string PrensaPath = "Assets/ThirdParty/Prensa/Prensa.fbx";
+        public const string NeumaticaPath = "Assets/ThirdParty/Neumatica/Neumatica.fbx";
+
+        const string HintMolino = "<b>ESPERA: TODAVÍA SE MUEVE</b>\nApagar no alcanza: la polea sigue girando por inercia.\nVerifica cuando esté quieta ({0} s).";
+        const string HintPrensa = "<b>ESPERA: TODAVÍA HAY PRESIÓN</b>\nApagar no alcanza: el aceite sigue empujando el pistón.\nVerifica cuando el manómetro marque 0 ({0} s).";
+        const string HintNeumatica = "<b>ESPERA: TODAVÍA HAY AIRE</b>\nApagar no alcanza: queda aire comprimido en la línea.\nVerifica cuando el manómetro marque 0 ({0} s).";
+
+        /// <summary>
+        /// The team's press and pneumatic station (Modelos/Prototipo1) next to the first machine, one shown at a time
+        /// (MachineSelector: the next student gets the next machine). Each gets its own label and lamp place, and its
+        /// moving parts (MachineMotion). The danger zone grows to hold the largest. Nothing changes if both files are missing.
+        /// </summary>
+        static void AddTeamMachines(Transform machine, GameObject first, bool molino, Transform label, Transform lamp,
+            Transform zone, BoxCollider trigger, EnergyFlow flow)
+        {
+            DangerZone dz = zone != null ? zone.GetComponent<DangerZone>() : null;
+            if (dz == null || label == null || lamp == null) return;
+            // The press is the tallest: 0.29 m keeps clear of the step pointer above the machine (0.25-0.31 is its band,
+            // but it points at the front, and the press is narrow at the top).
+            GameObject prensa = PlaceTeamMachine(PrensaPath, "Model_Prensa", machine, "Bed", "Cylinder", 0.24f, 0.29f);
+            GameObject neumatica = PlaceTeamMachine(NeumaticaPath, "Model_Neumatica", machine, "Base", "CylinderBody", 0.27f, 0.27f);
+            if (prensa == null && neumatica == null) return;
+
+            Transform holder = Group("Models", machine, Vector3.zero);
+            Transform firstGroup = Group(molino ? "Molino" : "Kenney", holder, Vector3.zero);
+            first.transform.SetParent(firstGroup, true);
+            foreach (string extra in new[] { "RotorSpin", "Model_conveyor-long" })
+            {
+                Transform t = FindChild(machine, extra);
+                if (t != null) t.SetParent(firstGroup, true);
+            }
+            Transform oldSpinner = FindChild(machine, "Spinner");
+            if (oldSpinner != null && oldSpinner.gameObject.activeSelf) oldSpinner.SetParent(firstGroup, true);
+
+            var machines = new System.Collections.Generic.List<GameObject> { firstGroup.gameObject };
+            var names = new System.Collections.Generic.List<string> { molino ? "MOLINO" : "MÁQUINA" };
+            var hints = new System.Collections.Generic.List<string> { HintMolino };
+            var labels = new System.Collections.Generic.List<Vector3> { label.localPosition };
+            var lamps = new System.Collections.Generic.List<Vector3> { lamp.localPosition };
+            Bounds all = LocalBounds(machine, firstGroup.gameObject);
+            Lever lever = Object.FindAnyObjectByType<Lever>();
+
+            if (prensa != null)
+            {
+                Bounds b = LocalBounds(machine, prensa);
+                all.Encapsulate(b);
+                var motion = prensa.AddComponent<MachineMotion>();
+                motion.zone = dz;
+                motion.lever = lever;
+                // Real stroke 0.25 m of 1.80 m: the same share of the scaled height.
+                SetupSlider(machine, motion, FindChild(prensa.transform, "RamPivot"), 0.25f / 1.80f * b.size.y);
+                SetupNeedle(machine, motion, FindChild(prensa.transform, "GaugeNeedlePivot"), 180f);
+                SetupHandle(machine, motion, FindChild(prensa.transform, "BleedValvePivot"), Vector3.back, 90f);
+                machines.Add(prensa); names.Add("PRENSA"); hints.Add(HintPrensa);
+                labels.Add(LabelPlace(machine, prensa, b)); lamps.Add(LampPlace(b));
+                Debug.Log("[Loto] Team press added (" + b.size.ToString("F2") + " m).");
+            }
+            if (neumatica != null)
+            {
+                Bounds b = LocalBounds(machine, neumatica);
+                all.Encapsulate(b);
+                var motion = neumatica.AddComponent<MachineMotion>();
+                motion.zone = dz;
+                motion.lever = lever;
+                motion.cyclesPerSecond = 0.8f;
+                SetupSlider(machine, motion, FindChild(neumatica.transform, "RodPivot"), 0.15f / 1.20f * b.size.y);
+                SetupNeedle(machine, motion, FindChild(neumatica.transform, "GaugeNeedlePivot"), 150f);
+                SetupHandle(machine, motion, FindChild(neumatica.transform, "ValveHandlePivot"), Vector3.up, 90f);
+                machines.Add(neumatica); names.Add("NEUMÁTICA"); hints.Add(HintNeumatica);
+                labels.Add(LabelPlace(machine, neumatica, b)); lamps.Add(LampPlace(b));
+                Debug.Log("[Loto] Team pneumatic station added (" + b.size.ToString("F2") + " m).");
+            }
+            foreach (GameObject m in machines)
+                if (m != firstGroup.gameObject) m.transform.SetParent(holder, true);
+
+            if (trigger != null)
+            {
+                zone.localPosition = all.center;
+                trigger.size = Vector3.Max(all.size + Vector3.one * 0.07f, new Vector3(0.27f, 0.28f, 0.27f));
+            }
+            if (flow != null) flow.shaker = holder;
+
+            var selector = machine.gameObject.AddComponent<MachineSelector>();
+            selector.session = dz.session;
+            selector.machines = machines.ToArray();
+            selector.names = names.ToArray();
+            selector.hints = hints.ToArray();
+            selector.labelPositions = labels.ToArray();
+            selector.lampPositions = lamps.ToArray();
+            selector.label = label;
+            selector.labelText = label.GetComponentInChildren<UnityEngine.UI.Text>(true);
+            selector.lamp = lamp;
+            for (int i = 1; i < machines.Count; i++) machines[i].SetActive(false);
+            Debug.Log("[Loto] " + machines.Count + " machines on the table; the next student gets the next one.");
+        }
+
+        /// <summary>Stood upright (high part above low part) and turned so its LabelPoint faces the user.</summary>
+        static GameObject PlaceTeamMachine(string path, string objectName, Transform machine, string low, string high, float footprint, float height)
+        {
+            GameObject m = PlaceFbx(path, objectName, machine, footprint, height, 0f, Quaternion.identity, true);
+            if (m == null) return null;
+            Quaternion upright = Quaternion.identity;
+            Transform lo = FindChild(m.transform, low), hi = FindChild(m.transform, high);
+            if (lo != null && hi != null)
+            {
+                Vector3 axis = DominantAxis(LocalBounds(machine, hi.gameObject).center - LocalBounds(machine, lo.gameObject).center);
+                if (axis != Vector3.up) upright = Quaternion.FromToRotation(axis, Vector3.up);
+            }
+            if (upright != Quaternion.identity)
+            {
+                Object.DestroyImmediate(m);
+                m = PlaceFbx(path, objectName, machine, footprint, height, 0f, upright, true);
+            }
+            Transform labelPoint = FindChild(m.transform, "LabelPoint");
+            if (labelPoint == null) return m;
+            Bounds b = LocalBounds(machine, m);
+            Vector3 toLabel = machine.InverseTransformPoint(labelPoint.position) - b.center;
+            toLabel.y = 0f;
+            if (toLabel.sqrMagnitude < 0.000001f) return m;
+            // Snapped to a quarter turn: the plate is on one face of the machine.
+            float yaw = Vector3.SignedAngle(DominantAxis(toLabel), Vector3.back, Vector3.up);
+            if (Mathf.Abs(yaw) < 1f) return m;
+            Object.DestroyImmediate(m);
+            return PlaceFbx(path, objectName, machine, footprint, height, yaw, upright, true);
+        }
+
+        static void SetupSlider(Transform machine, MachineMotion motion, Transform pivot, float stroke)
+        {
+            if (pivot == null || pivot.parent == null) return;
+            motion.slider = pivot;
+            motion.slideOffset = pivot.parent.InverseTransformVector(machine.TransformVector(Vector3.down * stroke));
+        }
+
+        static void SetupNeedle(Transform machine, MachineMotion motion, Transform pivot, float angle)
+        {
+            if (pivot == null) return;
+            motion.needle = pivot;
+            motion.needleAxis = pivot.InverseTransformDirection(machine.TransformDirection(Vector3.back));
+            motion.needleAngle = angle;
+        }
+
+        static void SetupHandle(Transform machine, MachineMotion motion, Transform pivot, Vector3 machineAxis, float angle)
+        {
+            if (pivot == null) return;
+            motion.handle = pivot;
+            motion.handleAxis = pivot.InverseTransformDirection(machine.TransformDirection(machineAxis));
+            motion.handleAngle = angle;
+        }
+
+        static Vector3 LabelPlace(Transform machine, GameObject model, Bounds b)
+        {
+            Transform labelPoint = FindChild(model.transform, "LabelPoint");
+            if (labelPoint != null) return machine.InverseTransformPoint(labelPoint.position) + new Vector3(0f, 0f, -0.004f);
+            return new Vector3(0f, b.min.y + 0.03f, b.min.z - 0.003f);
+        }
+
+        static Vector3 LampPlace(Bounds b)
+        {
+            return new Vector3(b.min.x + 0.03f, b.max.y - 0.03f, b.min.z - 0.008f);
         }
 
         public const string MolinoPath = "Assets/ThirdParty/Molino/Molino.fbx";
