@@ -82,7 +82,7 @@ namespace Loto.EditorTools
         /// machine's old place on the table. false = the table-scale scene of 21/11 morning.
         /// </summary>
         public const bool RealScaleMachines = true;
-        public static readonly Vector3 MachineFloorPosition = new Vector3(1.35f, 0f, 0.85f);
+        public static readonly Vector3 MachineFloorPosition = new Vector3(1.90f, 0f, 0.90f);
         public static readonly Vector3 MachineButtonPosition = new Vector3(0.36f, TableTop, 0.42f);
         public static readonly Vector3 BleedButtonPosition = new Vector3(0.36f, TableTop, 0.62f);
 
@@ -175,7 +175,7 @@ namespace Loto.EditorTools
             desktopCamera.nearClipPlane = 0.05f;
             desktopCamera.depth = 10f;
             desktopObject.transform.position = DesktopEye;
-            desktopObject.transform.LookAt(new Vector3(0f, 1.20f, 1.0f));
+            desktopObject.transform.LookAt(RealScaleMachines ? new Vector3(0.75f, 1.05f, 1.0f) : new Vector3(0f, 1.20f, 1.0f));
             parts.desktopCamera = desktopCamera;
 
             // Session helpers. LotoLog needs no object: it starts by itself (RuntimeInitializeOnLoadMethod).

@@ -29,7 +29,7 @@ namespace Loto.EditorTools
             body.GetComponent<MeshRenderer>().enabled = false;
 
             // Hazard stripes on the table under the machine: the danger zone made visible.
-            GameObject stripes = PlaceModel("indicator-special-lines", machine, RealScaleMachines ? 2.2f : 0.30f, 0.02f, 0f);
+            GameObject stripes = PlaceModel("indicator-special-lines", machine, RealScaleMachines ? 1.7f : 0.30f, 0.02f, 0f);
             if (stripes != null) stripes.transform.localPosition += new Vector3(0f, 0.001f, 0f);
 
             Bounds b = LocalBounds(machine, model);
@@ -186,6 +186,7 @@ namespace Loto.EditorTools
             VerifyButton bleed = BuildButton(parts, "BleedButton", BleedButtonPosition, "PURGAR",
                 VerifyButton.ButtonAction.Bleed, new Color(0.80f, 0.12f, 0.10f));
             selector.bleedButton = bleed.gameObject;
+            BuildControlStation(parts, dangerZone, bleed);
             bleed.gameObject.SetActive(false);   // the first machine (the mill) has no stored pressure
             Debug.Log("[Loto] Real-scale machines on the floor: MÁQUINA and PURGAR buttons on the table.");
         }
@@ -260,8 +261,15 @@ namespace Loto.EditorTools
                 labels.Add(LabelPlace(machine, neumatica, b)); lamps.Add(LampPlace(b));
                 Debug.Log("[Loto] Team pneumatic station added (" + b.size.ToString("F2") + " m).");
             }
-            foreach (GameObject m in machines)
-                if (m != firstGroup.gameObject) m.transform.SetParent(holder, true);
+            for (int i = 0; i < machines.Count; i++)
+            {
+                if (machines[i] == firstGroup.gameObject) continue;
+                Transform group = Group(names[i] == "PRENSA" ? "Prensa" : "Neumatica", holder, Vector3.zero);
+                machines[i].transform.SetParent(group, true);
+                machines[i] = group.gameObject;
+            }
+            if (RealScaleMachines)
+                foreach (GameObject g in machines) AddGround(machine, g);
 
             if (trigger != null)
             {
@@ -291,6 +299,111 @@ namespace Loto.EditorTools
             selector.advanceOnNewStudent = !RealScaleMachines;
             for (int i = 1; i < machines.Count; i++) machines[i].SetActive(false);
             Debug.Log("[Loto] " + machines.Count + " machines on the table; the next student gets the next one.");
+        }
+
+        /// <summary>
+        /// A flat, opaque, near-black ellipse under the machine: in passthrough it reads as the machine's shadow on the
+        /// real floor, so the machine stands on it instead of floating. Child of the machine's group (switches with it).
+        /// </summary>
+        static void AddGround(Transform machine, GameObject group)
+        {
+            Bounds b = LocalBounds(machine, group);
+            Material ground = MakeMaterial("GroundShadow", "Universal Render Pipeline/Unlit", new Color(0.03f, 0.03f, 0.035f), 0f);
+            GameObject disc = Part(PrimitiveType.Cylinder, "Ground", machine, new Vector3(b.center.x, 0.002f, b.center.z),
+                new Vector3(b.size.x * 1.12f, 0.001f, b.size.z * 1.12f), ground);
+            disc.transform.SetParent(group.transform, true);
+        }
+
+        public const string SeccionadorPath = "Assets/ThirdParty/Seccionador/Seccionador.fbx";
+
+        /// <summary>
+        /// The lockout station beside the real-scale machine, as in a real workshop: the disconnect switch with its
+        /// lever and lock point, VERIFICAR and PURGAR, on a pedestal just outside the danger zone. The padlock stays in
+        /// its tray on the table: the student carries it to the machine. Nothing changes for the Referee.
+        /// </summary>
+        static void BuildControlStation(Parts parts, DangerZone dangerZone, VerifyButton bleed)
+        {
+            Transform board = parts.board, machine = dangerZone.transform.parent;
+            BoxCollider zone = dangerZone.GetComponent<BoxCollider>();
+            if (zone == null) return;
+            Vector3 zoneMin = dangerZone.transform.localPosition + zone.center - zone.size / 2f;
+            const float top = 0.95f;   // hand height, like the table
+            Transform station = Group("ControlStation", machine, new Vector3(zoneMin.x - 0.33f, 0f, zoneMin.z + 0.30f));
+            Material stand = MakeMaterial("StationStand", "Universal Render Pipeline/Lit", new Color(0.20f, 0.22f, 0.25f), 0.3f);
+            Material edge = MakeMaterial("StationEdge", "Universal Render Pipeline/Lit", new Color(0.95f, 0.72f, 0.05f), 0.2f);
+            Part(PrimitiveType.Cube, "Pedestal", station, new Vector3(0f, (top - 0.01f) / 2f, 0f), new Vector3(0.55f, top - 0.01f, 0.40f), stand);
+            Part(PrimitiveType.Cube, "PedestalTop", station, new Vector3(0f, top - 0.005f, 0f), new Vector3(0.58f, 0.01f, 0.43f), edge);
+            Label(station, "StationLabel", "PUNTO DE BLOQUEO", new Vector3(0f, top - 0.12f, -0.2015f), Quaternion.identity,
+                520, 90, 0.40f, 56, new Color(0.95f, 0.72f, 0.05f));
+
+            // Same arrangement as on the table, moved as a block: switch box base -> left of the pedestal top.
+            Vector3 switchBase = new Vector3(LeverX, TableTop, LeverZ);
+            Vector3 switchSpot = new Vector3(-0.13f, top, 0.07f);
+            foreach (string n in new[] { "SwitchBox", "HingeBlock", "SwitchLabel", "LockPost", "LockPoint" })
+            {
+                Transform t = board.Find(n);   // direct children only: the press model has its own LockPoint
+                if (t == null) continue;
+                Vector3 p = t.localPosition;
+                t.SetParent(station, false);
+                t.localPosition = p - switchBase + switchSpot;
+            }
+            Transform lever = parts.lever.transform;
+            Vector3 lp = lever.localPosition;
+            lever.SetParent(station, false);
+            lever.localPosition = lp - switchBase + switchSpot;
+
+            Transform verify = board.Find("VerifyButton");
+            if (verify != null) { verify.SetParent(station, false); verify.localPosition = new Vector3(0.15f, top, 0.09f); }
+            if (bleed != null) { bleed.transform.SetParent(station, false); bleed.transform.localPosition = new Vector3(0.15f, top, -0.09f); }
+            Transform tryOut = board.Find("TryOutLabel");
+            if (tryOut != null) { tryOut.SetParent(station, false); tryOut.localPosition = new Vector3(0f, top + 0.45f, 0f); }
+
+            // The cable now runs from the switch box to the machine: drop the table run.
+            var old = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in board) if (child.name == "Cable") old.Add(child.gameObject);
+            foreach (GameObject g in old) Object.DestroyImmediate(g);
+            Transform start = Group("CableStart", station, switchSpot + new Vector3(0f, 0.03f, SwitchBoxSize.z / 2f));
+            Transform plug = FindChild(machine, "CablePlug");
+            Transform flowRoot = board.Find("EnergyFlow");
+            EnergyFlow flow = flowRoot != null ? flowRoot.GetComponent<EnergyFlow>() : null;
+            if (flow != null && plug != null) flow.path = new[] { start, plug };
+            Transform drop = board.Find("CableDrop");
+            CableLink link = drop != null ? drop.GetComponent<CableLink>() : null;
+            if (link != null) link.from = start;
+
+            DressSwitch(station, switchSpot);
+            Debug.Log("[Loto] Lockout station beside the machine: lever, lock point, VERIFICAR and PURGAR.");
+        }
+
+        /// <summary>The team's disconnect switch box (Seccionador) in place of the yellow cube; our lever stays the one
+        /// that is grabbed, so the model's own handle goes.</summary>
+        static void DressSwitch(Transform station, Vector3 spot)
+        {
+            GameObject m = PlaceFbx(SeccionadorPath, "Model_Seccionador", station, 0.25f, 0.40f, 0f, Quaternion.identity, true);
+            if (m == null) return;
+            Transform box = FindChild(m.transform, "Box"), handle = FindChild(m.transform, "Handle");
+            if (box != null && handle != null)
+            {
+                Vector3 axis = DominantAxis(LocalBounds(station, handle.gameObject).center - LocalBounds(station, box.gameObject).center);
+                if (axis != Vector3.up)
+                {
+                    Object.DestroyImmediate(m);
+                    m = PlaceFbx(SeccionadorPath, "Model_Seccionador", station, 0.25f, 0.40f, 0f, Quaternion.FromToRotation(axis, Vector3.up), true);
+                }
+            }
+            foreach (string n in new[] { "HandlePivot", "Handle", "LockPoint" })
+            {
+                Transform t = FindChild(m.transform, n);
+                if (t != null) Object.DestroyImmediate(t.gameObject);
+            }
+            Bounds b = LocalBounds(station, m);
+            float footprint = Mathf.Max(b.size.x, b.size.z);
+            if (footprint < 0.0001f || b.size.y < 0.0001f) return;
+            m.transform.localScale *= Mathf.Min(SwitchBoxSize.y / b.size.y, 0.22f / footprint);
+            b = LocalBounds(station, m);
+            m.transform.localPosition -= new Vector3(b.center.x - spot.x, b.min.y - spot.y, b.center.z - spot.z);
+            Transform cube = station.Find("SwitchBox");
+            if (cube != null && cube.GetComponent<Renderer>() != null) cube.GetComponent<Renderer>().enabled = false;
         }
 
         /// <summary>Stood upright (high part above low part) and turned so its LabelPoint faces the user.</summary>
@@ -558,6 +671,10 @@ namespace Loto.EditorTools
                         c.a = 1f;   // opaque, always
                         string matName = "Team_" + (slots[i] != null ? slots[i].name : "Part").Replace(" ", "_").Replace("/", "_");
                         slots[i] = MakeMaterial(matName, "Universal Render Pipeline/Lit", c, 0.25f);
+                        float hi = Mathf.Max(c.r, Mathf.Max(c.g, c.b)), lo = Mathf.Min(c.r, Mathf.Min(c.g, c.b));
+                        bool steel = hi > 0.55f && hi - lo < 0.12f;
+                        if (slots[i].HasProperty("_Metallic")) slots[i].SetFloat("_Metallic", steel ? 0.75f : 0f);
+                        if (steel && slots[i].HasProperty("_Smoothness")) slots[i].SetFloat("_Smoothness", 0.65f);
                     }
                     else slots[i] = slots[i] != null && slots[i].name.ToLowerInvariant().Contains("glass") ? glass : colormap;
                 }
