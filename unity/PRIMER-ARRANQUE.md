@@ -35,6 +35,8 @@ Escrito el viernes 20/11, 15:00. **Unity todavía no abrió este proyecto ni una
 8. Build al Quest: menú **Loto > Build APK** (sale `Builds\loto.apk`), o con Unity cerrado
    `powershell -ExecutionPolicy Bypass -File Tools\build.ps1 -Install`.
    Instalar a mano: `adb install -r Builds\loto.apk`.
+   Etapas: menú **Loto > Etapas...** guarda cada APK con nombre y hora en `Builds\etapas\` (fuera de git) y la
+   reinstala en el Quest con un botón, para mostrar cómo avanzó el trabajo. Solo editor: no cambia la escena.
 9. Dirección del servidor en el visor (la app se abre una vez antes, para que exista la carpeta):
    `adb shell "echo http://IP-DE-LA-LAPTOP:3000 > /sdcard/Android/data/com.equipo.lotoxr/files/server.txt"`
    La app lee `server.txt` una sola vez, al arrancar (`AttemptSender.Awake`): después de escribirlo, cerrarla con
