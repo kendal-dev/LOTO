@@ -48,7 +48,7 @@ llega a un **panel web** donde el docente ve quién completó, en qué paso se e
 | **La prueba de arranque** | Al apretar VERIFICAR suena un «clac» seco, la lámpara parpadea y sale **PRUEBA DE ARRANQUE · NO ARRANCA** |
 | **El final** | Tres notas y el panel en verde al completar. Un zumbador y el panel en rojo si toca la máquina antes |
 | **El repaso del error** | El panel marca en rojo el paso que se saltó, «(TE LO SALTASTE)», y abajo muestra **«Tu orden: …»** con lo que hizo |
-| **La guía después del error** | Antes de equivocarse no hay guía. Desde el primer error (el que frena o un aviso amarillo), un alfiler señala el paso que falta. |
+| **El alfiler después del error** | La lista de pasos está siempre a la vista. Desde el primer error (el que frena o un aviso amarillo), un alfiler señala el paso que falta. |
 
 Todo se arma con figuras simples de colores y sonidos generados por código: el proyecto **no usa modelos 3D,
 texturas ni audio de terceros**. Los materiales son opacos para no abrir huecos en el passthrough.
@@ -65,7 +65,7 @@ PIXO VR, EHS VR, iQ3Connect, NxtTech, Roundtable Learning, Linde LVA y uno en St
 virtual cerrada** (el estudiante está en una planta virtual) y se venden a empresas por cotización.
 
 - **Realidad mixta en el taller real:** en los que revisamos, ninguno pone la máquina en el aula real, sin aislar al estudiante en un mundo virtual.
-- **La guía aparece solo después del error**, en vez de separar «modo guiado» y «modo examen».
+- **El alfiler aparece solo después del error**, en vez de separar «modo guiado» y «modo examen».
 - **El docente ve la clase en vivo**, sin un sistema de gestión de aprendizaje (LMS).
 - **La tarjeta dice quién bloqueó y a qué hora**, porque el reglamento de COMIBOL (2023) dice que el bloqueo lo retira quien lo colocó.
 
@@ -212,7 +212,7 @@ antes de que empezara el evento:
 - El proyecto de Unity (paquetes y ajustes copiados de un proyecto anterior para Quest 3) y los scripts del visor
   en `unity/Assets/Loto/Runtime/`.
 - El 20/11 a la noche: los arreglos de la palanca, el candado y la locomoción del rig, y cuatro funciones (sonido y
-  energía visible, tarjeta de bloqueo, repaso del error y guía después del error).
+  energía visible, tarjeta de bloqueo, repaso del error y alfiler después del error).
 - Este README, el plan del fin de semana y las reglas de trabajo del repositorio.
 
 Esa base se escribió con ayuda de asistentes de IA (ver abajo).
