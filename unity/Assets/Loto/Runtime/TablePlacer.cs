@@ -50,6 +50,17 @@ namespace Loto
             if (!Supported()) Debug.Log("[Loto] Real-surface placement off (no environment depth here): the board keeps its fixed place.");
         }
 
+        // The gaze window starts again each time the headset is put on: seen on 21/11 in the Quest, the app was opened
+        // with the headset on the table, the 15 s ran out looking at nothing and the board stayed in its fixed place.
+        void OnEnable() { OVRManager.HMDMounted += RestartGazeWindow; }
+        void OnDisable() { OVRManager.HMDMounted -= RestartGazeWindow; }
+
+        void RestartGazeWindow()
+        {
+            _startTime = Time.time;
+            _nextTry = 0f;
+        }
+
         void Update()
         {
             if (!Supported()) return;
