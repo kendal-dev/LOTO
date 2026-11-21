@@ -30,6 +30,9 @@ namespace Loto.EditorTools
             managerData.FindProperty("_trackingOriginType").intValue = (int)OVRManager.TrackingOrigin.FloorLevel;
             // Real-surface placement (TablePlacer) reads the depth sensor: it needs the scene permission at start.
             managerData.FindProperty("requestScenePermissionOnStartup").boolValue = true;
+            // No guardian circle: in passthrough the student sees the real room, so the whole space is usable (the boundary
+            // walls cut the real-scale machines when walking up to them, seen 21/11). Needs boundaryVisibilitySupport below.
+            managerData.FindProperty("shouldBoundaryVisibilityBeSuppressed").boolValue = true;
             managerData.ApplyModifiedPropertiesWithoutUndo();
 
             // In this SDK version the passthrough layer is always the background (underlay).
@@ -70,6 +73,11 @@ namespace Loto.EditorTools
             if (projectConfig.anchorSupport != OVRProjectConfig.AnchorSupport.Enabled)
             {
                 projectConfig.anchorSupport = OVRProjectConfig.AnchorSupport.Enabled;
+                changed = true;
+            }
+            if (projectConfig.boundaryVisibilitySupport == OVRProjectConfig.FeatureSupport.None)
+            {
+                projectConfig.boundaryVisibilitySupport = OVRProjectConfig.FeatureSupport.Supported;
                 changed = true;
             }
             if (changed) OVRProjectConfig.CommitProjectConfig(projectConfig);

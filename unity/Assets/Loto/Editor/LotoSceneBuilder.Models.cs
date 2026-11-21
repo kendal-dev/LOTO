@@ -561,6 +561,7 @@ namespace Loto.EditorTools
         /// </summary>
         static partial void DressPadlock(Transform padlock)
         {
+            if (BuildRealisticPadlock(padlock)) return;   // LotoSceneBuilder.Padlock.cs: looks real; the team model is the fallback
             GameObject m = PlaceCandado(padlock, 0f, Quaternion.identity);
             if (m == null) return;
             Quaternion upright = Quaternion.identity;
