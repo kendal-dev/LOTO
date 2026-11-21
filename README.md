@@ -50,8 +50,12 @@ intento se manda a un **panel web** (si la red falla, la práctica sigue y ese i
 | **El repaso del error** | El panel marca en rojo el paso que se saltó, «(TE LO SALTASTE)», y abajo muestra **«Tu orden: …»** con lo que hizo |
 | **El alfiler después del error** | La lista de pasos está siempre a la vista. Desde el primer error (el que frena o un aviso amarillo), un alfiler señala el paso que falta. |
 
-Todo se arma con figuras simples de colores y sonidos generados por código: el proyecto **no usa modelos 3D,
-texturas ni audio de terceros**. Los materiales son opacos para no abrir huecos en el passthrough.
+| **La mesa real** | El tablero se apoya solo sobre la mesa real que mira el estudiante (sensor de profundidad del Quest 3, con MRUK), o sobre un **código QR pegado en la mesa**, como el Quest rastrea un teclado. Al apoyarse, desaparece la mesa dibujada |
+| **La energía, visible** | Mientras hay energía, unas luces corren por el cable desde la caja de la palanca hasta la máquina y la máquina vibra. Al bajar la palanca, se cortan |
+
+La máquina usa modelos CC0 del Factory Kit de Kenney (carcasa, engranaje, cinta y franjas de peligro); el resto se
+arma con figuras de colores y los sonidos se generan por código. Todos los materiales son opacos para no abrir
+huecos en el passthrough.
 
 ### Lo que ve el docente
 
@@ -183,18 +187,15 @@ docs/CONTRATO.md       Contrato HTTP visor ↔ servidor
 docs/equipo/           Módulos, dueños y tareas del equipo
 ```
 
-## Estado (20/11/2026, noche)
+## Estado (21/11/2026, tarde)
 
 | Parte | Estado |
 |---|---|
 | Lógica (`Loto.Core`) | Probada: 174 comprobaciones, 0 fallas |
-| Scripts del visor y armado de escena | **Compilan dentro de Unity** (y fuera, contra las DLL de Unity y de Meta: 0 errores, 0 avisos) |
-| Escena | Se armó en Unity el 20/11 con el rig de Meta y las manos. Hay que volver a armarla para que entren las funciones de sonido, tarjeta, repaso y guía |
-| APK | El primer intento falló por una librería duplicada (el proyecto estaba en Windows); `Loto > Build APK` ya lo resuelve. Falta compilarlo de nuevo |
-| En el visor | **Todavía no se probó**: manos, agarre, sonido y envío al servidor |
-| Servidor de prueba | Probado con pedidos reales. El panel no se vio todavía en un navegador |
-
-[PENDIENTE: actualizar después de la primera prueba en el visor]
+| En el Meta Quest 3 | **Probado:** passthrough, los 4 pasos, los errores que frenan y la secuencia completa |
+| Visor → panel del docente | **Probado:** cada intento llegó al servidor por el WiFi del evento (HTTP 201) |
+| Mesa real | **Probado:** el tablero se apoyó solo sobre una superficie real con la mirada. El anclaje con QR está activo; [CONFIRMAR: prueba con el QR impreso] |
+| Pruebas con personas | [PENDIENTE: sábado 17:00] |
 
 ## Qué se preparó antes del evento y qué se hizo durante
 
@@ -244,6 +245,6 @@ Esa base se escribió con ayuda de asistentes de IA (ver abajo).
 ## Créditos y licencias
 
 - Meta XR SDK y Unity se usan bajo sus propias licencias.
-- No se usan modelos 3D, texturas, fuentes ni sonidos de terceros: las figuras se arman con primitivas de Unity y
-  los sonidos se generan por código (`ToneSynth.cs`).
+- Modelos 3D: **Factory Kit de Kenney** (www.kenney.nl), licencia **CC0** (`unity/Assets/ThirdParty/Kenney/FactoryKit/License.txt`).
+- El resto de las figuras se arma con primitivas de Unity y los sonidos se generan por código (`ToneSynth.cs`).
 - Licencia del código de este repositorio: [POR DEFINIR con el equipo]
