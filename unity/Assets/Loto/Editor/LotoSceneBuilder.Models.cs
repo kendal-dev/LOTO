@@ -76,6 +76,16 @@ namespace Loto.EditorTools
                 float h = TableTop + 0.012f, backZ = MachinePosition.z + b.max.z, boxBack = LeverZ + SwitchBoxSize.z / 2f;
                 Cable(board, new Vector3(LeverX, h, boxBack), new Vector3(LeverX, h, backZ), rubber);
                 Cable(board, new Vector3(LeverX, h, backZ), new Vector3(MachinePosition.x, h, backZ), rubber);
+
+                // Energy you can see: lights run along the cable while the lever is ON; the machine trembles.
+                Transform flowRoot = Group("EnergyFlow", board, Vector3.zero);
+                Transform p0 = Group("Path0", flowRoot, new Vector3(LeverX, h, boxBack));
+                Transform p1 = Group("Path1", flowRoot, new Vector3(LeverX, h, backZ));
+                Transform p2 = Group("Path2", flowRoot, new Vector3(MachinePosition.x, h, backZ));
+                var flow = flowRoot.gameObject.AddComponent<EnergyFlow>();
+                flow.lever = Object.FindAnyObjectByType<Lever>();
+                flow.path = new[] { p0, p1, p2 };
+                flow.shaker = model.transform;
             }
         }
 
