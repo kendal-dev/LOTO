@@ -98,18 +98,27 @@ namespace Loto
                 return;
             }
 
+            PlaceAt(hit.point, manual ? "controller" : "gaze");
+        }
+
+        /// <summary>
+        /// Puts the center of the drawn table top on point (a real surface), facing the user, and hides the drawn
+        /// table. Used by the gaze and controller rays and by QrPlacer (a QR code stuck on the real table).
+        /// </summary>
+        public bool PlaceAt(Vector3 point, string source)
+        {
+            if (board == null) return false;
             // Face the user: the board's +Z points from the user to the surface.
-            Vector3 from = head != null ? head.position : ray.origin;
-            Vector3 toward = hit.point - from;
+            Vector3 toward = head != null ? point - head.position : board.forward;
             toward.y = 0f;
-            if (toward.sqrMagnitude < 0.0001f) toward = Vector3.ProjectOnPlane(ray.direction, Vector3.up);
+            if (toward.sqrMagnitude < 0.0001f) toward = Vector3.forward;
             Quaternion yaw = Quaternion.LookRotation(toward.normalized, Vector3.up);
 
             // An anchored object cannot move: drop the old anchors, move, then anchor again so the board does not
             // drift away from the real table (Meta, "MRUK Instant Placement with Environment Raycasting").
             Unanchor(board);
             Unanchor(panel);
-            board.SetPositionAndRotation(hit.point - yaw * new Vector3(0f, tableTop, tableDistance), yaw);
+            board.SetPositionAndRotation(point - yaw * new Vector3(0f, tableTop, tableDistance), yaw);
             if (panel != null) panel.SetPositionAndRotation(board.TransformPoint(_panelLocal), board.rotation * _panelLocalRotation);
             board.gameObject.AddComponent<OVRSpatialAnchor>();
             if (panel != null) panel.gameObject.AddComponent<OVRSpatialAnchor>();
@@ -119,7 +128,8 @@ namespace Loto
                     if (part != null) part.SetActive(false);
 
             OnRealSurface = true;
-            Debug.Log("[Loto] Board placed on a real surface, " + hit.point.y.ToString("F2") + " m high (" + (manual ? "controller" : "gaze") + ").");
+            Debug.Log("[Loto] Board placed on a real surface, " + point.y.ToString("F2") + " m high (" + source + ").");
+            return true;
         }
     }
 }

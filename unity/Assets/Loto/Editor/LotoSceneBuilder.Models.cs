@@ -50,6 +50,42 @@ namespace Loto.EditorTools
             }
             Debug.Log("[Loto] Machine dressed with Kenney machine-window (" + b.size.x.ToString("F2") + " x " +
                 b.size.y.ToString("F2") + " x " + b.size.z.ToString("F2") + " m).");
+
+            // The part that turns becomes a gear (same Spinner object: DangerZone keeps turning it).
+            if (spinner != null)
+            {
+                GameObject cog = PlaceModel("cog-a", spinner, 0.18f, 0.035f, 0f, true);
+                if (cog != null)
+                {
+                    foreach (Transform child in spinner)
+                        if (child.gameObject != cog) { var mr = child.GetComponent<MeshRenderer>(); if (mr != null) mr.enabled = false; }
+                    cog.transform.localPosition += new Vector3(0f, -0.012f, 0f);
+                }
+            }
+
+            // A conveyor through the machine's tunnel (along X): it reads as a production line.
+            GameObject belt = PlaceModel("conveyor-long", machine, 0.40f, 0.07f, 0f, false, true);
+            if (belt != null) belt.transform.localPosition += new Vector3(0f, 0.002f, 0f);
+
+            // The power cable from the back of the switch box to the back of the machine, along the back of the table
+            // (behind the buttons): it shows at a glance that the lever feeds the machine.
+            Transform board = machine.parent;
+            if (board != null)
+            {
+                Material rubber = MakeMaterial("Cable", "Universal Render Pipeline/Lit", new Color(0.06f, 0.06f, 0.07f), 0.35f);
+                float h = TableTop + 0.012f, backZ = MachinePosition.z + b.max.z, boxBack = LeverZ + SwitchBoxSize.z / 2f;
+                Cable(board, new Vector3(LeverX, h, boxBack), new Vector3(LeverX, h, backZ), rubber);
+                Cable(board, new Vector3(LeverX, h, backZ), new Vector3(MachinePosition.x, h, backZ), rubber);
+            }
+        }
+
+        /// <summary>A straight cable (opaque cylinder, no collider) between two board-local points.</summary>
+        static void Cable(Transform board, Vector3 from, Vector3 to, Material material)
+        {
+            Vector3 mid = (from + to) / 2f, dir = to - from;
+            if (dir.sqrMagnitude < 0.0001f) return;
+            GameObject c = Part(PrimitiveType.Cylinder, "Cable", board, mid, new Vector3(0.016f, dir.magnitude / 2f, 0.016f), material);
+            c.transform.localRotation = Quaternion.FromToRotation(Vector3.up, dir.normalized);
         }
 
         /// <summary>
@@ -58,6 +94,34 @@ namespace Loto.EditorTools
         /// </summary>
         static GameObject PlaceModel(string name, Transform parent, float maxFootprint, float maxHeight, float yaw)
         {
+            return PlaceModel(name, parent, maxFootprint, maxHeight, yaw, false, false);
+        }
+
+        /// <summary>
+        /// lieFlat: if the model stands taller than wide (a gear modeled upright), it is laid flat first.
+        /// alongX: the model's long side is turned to point along X.
+        /// </summary>
+        static GameObject PlaceModel(string name, Transform parent, float maxFootprint, float maxHeight, float yaw, bool lieFlat, bool alongX = false)
+        {
+            GameObject model = PlaceModelRaw(name, parent, maxFootprint, maxHeight, yaw);
+            if (model == null) return null;
+            Bounds b = LocalBounds(parent, model);
+            Quaternion extra = Quaternion.identity;
+            if (lieFlat && b.size.y > Mathf.Max(b.size.x, b.size.z)) extra = Quaternion.Euler(90f, 0f, 0f);
+            else if (alongX && b.size.z > b.size.x) extra = Quaternion.Euler(0f, 90f, 0f);
+            if (extra == Quaternion.identity) return model;
+            Object.DestroyImmediate(model);
+            model = PlaceModelRaw(name, parent, maxFootprint, maxHeight, yaw, extra);
+            return model;
+        }
+
+        static GameObject PlaceModelRaw(string name, Transform parent, float maxFootprint, float maxHeight, float yaw)
+        {
+            return PlaceModelRaw(name, parent, maxFootprint, maxHeight, yaw, Quaternion.identity);
+        }
+
+        static GameObject PlaceModelRaw(string name, Transform parent, float maxFootprint, float maxHeight, float yaw, Quaternion extra)
+        {
             var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(KenneyFolder + "/" + name + ".fbx");
             if (prefab == null) return null;
             var model = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
@@ -65,7 +129,7 @@ namespace Loto.EditorTools
             model.name = "Model_" + name;
             model.transform.SetParent(parent, false);
             model.transform.localPosition = Vector3.zero;
-            model.transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+            model.transform.localRotation = Quaternion.Euler(0f, yaw, 0f) * extra;
             model.transform.localScale = Vector3.one;
             foreach (Collider c in model.GetComponentsInChildren<Collider>(true)) Object.DestroyImmediate(c);
             // Our own opaque URP materials: the kit's imported ones may not use the project's shader (pink) and its

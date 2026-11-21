@@ -93,6 +93,15 @@ namespace Loto.EditorTools
             placer.tableTop = TableTop;
             placer.tableDistance = TableDistance;
 
+            // A QR code stuck on the real table anchors the board there (QrPlacer). MRUK only tracks QR codes here:
+            // it does not load the room, so no space scan is needed.
+            var mrukObject = new GameObject("MRUK");
+            var mruk = mrukObject.AddComponent<Meta.XR.MRUtilityKit.MRUK>();
+            if (mruk.SceneSettings == null) mruk.SceneSettings = new Meta.XR.MRUtilityKit.MRUK.MRUKSettings();
+            mruk.SceneSettings.LoadSceneOnStartup = false;
+            var qrPlacer = mrukObject.AddComponent<QrPlacer>();
+            qrPlacer.placer = placer;
+
             parts.rig = rig;
         }
     }
