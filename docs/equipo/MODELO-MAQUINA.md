@@ -259,3 +259,37 @@ Apply Scalings FBX All y Apply Transform»*.
 Mandá el `.fbx` a Daniel (chat o USB) con una captura de cómo se ve. Se integra en `unity/Assets/ThirdParty/` con el
 mismo código que hoy viste la máquina de Kenney: la app lo escala, pone el cartel en `LabelPoint`, la lámpara en
 `LampPoint` y hace girar `RotorPivot`. Cada modelo se puede integrar por separado, en cualquier orden.
+
+---
+
+## 10. Devolución del prototipo 1 (sábado 21/11, 15:00) y consejos para la versión oficial
+
+**Lo que está muy bien:** los nombres de las piezas son exactos (`Base, Body, Guard, Hopper, LabelPoint, LampPoint,
+Motor, RotorPivot, Rotor` · `Box, HandlePivot, Handle, LockPoint` · `Body, Shackle, Tag, TagFace`), la jerarquía es la
+pedida, los colores son sólidos y el molino se ve industrial y se entiende de un vistazo. Ya está integrado: la polea
+gira con la energía y el cartel y la lámpara van a sus puntos.
+
+**Lo que hubo que corregir por código (para que la versión oficial no lo necesite):**
+
+1. **Llegó acostado.** El FBX salió con **Z arriba** (lo habitual en Blender y Fusion), y Unity espera **Y arriba**.
+   La app ahora lo endereza sola mirando dónde está la `Hopper`, pero mejor exportar bien:
+   - **Blender:** en el exportador FBX, *Forward: −Z Forward*, *Up: Y Up*, ✔ *Apply Transform*, *Apply Scalings: FBX
+     All*. Antes, Ctrl+A → *All Transforms* en las mallas.
+   - **Fusion 360:** *Preferences → General → Default modeling orientation: **Y up*** **antes** de modelar (si el
+     diseño ya existe, rotarlo −90° en X y exportar).
+   - **Prueba de 10 segundos:** abrir el FBX en https://3dviewer.net — tiene que aparecer **parado** y con el frente
+     (la cara del `LabelPoint`) mirándote.
+2. **El frente.** La cara plana del `Body` con el `LabelPoint` es el frente: tiene que mirar a **−Z**. La app lo gira
+   si no, pero así no hace falta.
+
+**Para que la versión oficial quede mejor:**
+
+3. **La polea gira sola en la app: que se note.** Rayos bien marcados (4–6) y algún detalle asimétrico (una marca
+   o un rayo de otro color) para que se vea girar. La correa puede quedar quieta en la `Guard`.
+4. **Escala real** y el origen del `Molino` en el centro de la base, en el piso. Ya está bien; no cambiarlo.
+5. **Menos de 30.000 triángulos** y nada transparente (vidrio, alfa): siguen siendo obligatorios.
+6. **Seccionador:** la palanca hacia **arriba** en el archivo (encendida) y que, rotada −90° en X sobre
+   `HandlePivot`, quede apuntando al frente sin atravesar la caja. El `LockPoint` donde queda el agujero **con la
+   palanca abajo**.
+7. **Candado:** la `TagFace` lisa y blanca, mirando a −Z (la app escribe encima «PELIGRO · Bloqueado por…»).
+8. **Licencia:** decinos si los podemos publicar en el repo (CC0 o CC-BY con tu nombre) para ponerte en créditos.
