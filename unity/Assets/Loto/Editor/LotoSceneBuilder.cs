@@ -37,6 +37,7 @@ namespace Loto.EditorTools
         static partial void DressMachine(Transform machine, GameObject body);
         static partial void DressPadlock(Transform padlock);
         static partial void AddMachineButtons(Parts parts, DangerZone dangerZone);
+        static partial void BuildMascot(Parts parts);
 
         public const string ScenePath = "Assets/Loto/Scenes/Loto.unity";
         public const string DesktopScenePath = "Assets/Loto/Scenes/LotoDesktop.unity";
@@ -163,6 +164,7 @@ namespace Loto.EditorTools
             AddMachineButtons(parts, dangerZone);   // LotoSceneBuilder.Models.cs: MÁQUINA and PURGAR (real-scale scene)
             StatusPanel panel = BuildPanel(parts);
             BuildStepPointer(parts, verifyButton, dangerZone);
+            BuildMascot(parts);   // LotoSceneBuilder.Mascot.cs: Chispa, the safety assistant
             parts.leftTip = BuildFingerTip("FingerTipLeft", "Left");
             parts.rightTip = BuildFingerTip("FingerTipRight", "Right");
 

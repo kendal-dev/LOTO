@@ -39,6 +39,10 @@ namespace Loto
         public Text steps;
         public Text notice;
 
+        /// <summary>The server explanation (maybe written by an AI model) or a hint was just shown: Chispa repeats it.</summary>
+        public static event System.Action<string> ExplanationShown;
+        public static event System.Action<string> HintShown;
+
         string _serverExplanation;
         string _hint;
         float _hintUntil;
@@ -81,6 +85,7 @@ namespace Loto
             // The notice box holds about 6 lines: a long text would push "Toca REINTENTAR" out of it.
             _serverExplanation = text.Length > 220 ? text.Substring(0, 217) + "..." : text;
             Redraw();
+            if (ExplanationShown != null) ExplanationShown(_serverExplanation);
         }
 
         void ClearExplanation() { _serverExplanation = null; _hint = null; }
@@ -91,6 +96,7 @@ namespace Loto
             _hint = text;
             _hintUntil = Time.unscaledTime + seconds;
             Redraw();
+            if (HintShown != null) HintShown(text);
         }
 
         void Redraw()
