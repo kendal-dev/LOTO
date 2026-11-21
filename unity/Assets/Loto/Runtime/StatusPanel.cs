@@ -40,6 +40,8 @@ namespace Loto
         public Text notice;
 
         string _serverExplanation;
+        string _hint;
+        float _hintUntil;
         Material _plateMaterial;
         int _shownSecond = -1;
 
@@ -65,6 +67,7 @@ namespace Loto
 
         void Update()
         {
+            if (_hint != null && Time.unscaledTime > _hintUntil) { _hint = null; Redraw(); }
             int second = Mathf.FloorToInt(session.Seconds);
             if (second == _shownSecond) return;
             _shownSecond = second;
@@ -80,7 +83,15 @@ namespace Loto
             Redraw();
         }
 
-        void ClearExplanation() { _serverExplanation = null; }
+        void ClearExplanation() { _serverExplanation = null; _hint = null; }
+
+        /// <summary>A short yellow notice that is not a Referee result (VERIFY while the machine still coasts).</summary>
+        public void ShowHint(string text, float seconds)
+        {
+            _hint = text;
+            _hintUntil = Time.unscaledTime + seconds;
+            Redraw();
+        }
 
         void Redraw()
         {
@@ -124,6 +135,11 @@ namespace Loto
                 plate = PlateDone;
                 messageColor = TextMain;
                 message = "<b>SECUENCIA COMPLETA</b> en " + session.Seconds.ToString("F0") + " s.\nLa máquina quedó sin energía, con tu candado y verificada: ahora sí es seguro tocarla.";
+            }
+            else if (_hint != null)
+            {
+                messageColor = TextWarn;
+                message = _hint;
             }
             else if (!string.IsNullOrEmpty(session.WarningCode))
             {

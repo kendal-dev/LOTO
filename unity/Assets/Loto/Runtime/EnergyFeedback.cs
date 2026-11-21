@@ -20,6 +20,8 @@ namespace Loto
         public GameObject tryOutLabel;
         public float humVolume = 0.35f;
         public float sfxVolume = 0.6f;
+        [Tooltip("Seconds the hum takes to die after the lever goes down. Same as DangerZone.coastSeconds.")]
+        public float windDownSeconds = 6f;
 
         static readonly Color LampOn = new Color(0.95f, 0.10f, 0.08f);
         static readonly Color LampOff = new Color(0.12f, 0.13f, 0.14f);
@@ -78,8 +80,8 @@ namespace Loto
                 _blinkUntil = 0f;
                 if (tryOutLabel != null) tryOutLabel.SetActive(false);
             }
-            // Spins up in 0.3 s, winds down in 1.2 s.
-            _level = Mathf.MoveTowards(_level, energized ? 1f : 0f, Time.deltaTime / (energized ? 0.3f : 1.2f));
+            // Spins up in 0.3 s; winds down with the machine's coast (DangerZone), so the hum dies when the pulley stops.
+            _level = Mathf.MoveTowards(_level, energized ? 1f : 0f, Time.deltaTime / (energized ? 0.3f : session.Referee.Failed ? 1.2f : windDownSeconds));
             if (hum != null)
             {
                 hum.volume = humVolume * _level;

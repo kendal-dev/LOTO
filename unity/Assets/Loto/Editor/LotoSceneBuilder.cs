@@ -35,6 +35,7 @@ namespace Loto.EditorTools
         static partial void BuildRig(Parts parts);
         static partial void BuildHands(Parts parts);
         static partial void DressMachine(Transform machine, GameObject body);
+        static partial void DressPadlock(Transform padlock);
 
         public const string ScenePath = "Assets/Loto/Scenes/Loto.unity";
         public const string DesktopScenePath = "Assets/Loto/Scenes/LotoDesktop.unity";
@@ -334,6 +335,8 @@ namespace Loto.EditorTools
             Wire(tagScript, "padlock", script);
             Wire(tagScript, "tagRoot", tag.gameObject);
             Wire(tagScript, "tagText", tagText);
+
+            DressPadlock(padlock);   // LotoSceneBuilder.Models.cs: the team's padlock model, if present (looks only)
         }
 
         /// <summary>A flat button on the table, pressed by touching it with a fingertip. Its text is on the cap.</summary>

@@ -163,6 +163,69 @@ namespace Loto.EditorTools
             return PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, yaw, upright, true);
         }
 
+        public const string CandadoPath = "Assets/ThirdParty/Candado/Candado.fbx";
+
+        /// <summary>
+        /// The team's padlock (Modelos/Prototipo1) in place of the cube padlock: only looks. The grab volume, the
+        /// snapping and our own lockout tag (shown only while locked, with the student's name) stay the same, so the
+        /// model's own Tag is removed. Stood upright with the shackle on top and the thin side to the front, whatever
+        /// axes the FBX was exported with, and fitted to the cube padlock's 8 x 12 cm.
+        /// </summary>
+        static partial void DressPadlock(Transform padlock)
+        {
+            GameObject m = PlaceCandado(padlock, 0f, Quaternion.identity);
+            if (m == null) return;
+            Quaternion upright = Quaternion.identity;
+            Transform body = FindChild(m.transform, "Body"), shackle = FindChild(m.transform, "Shackle");
+            if (body != null && shackle != null)
+            {
+                Vector3 axis = DominantAxis(LocalBounds(padlock, shackle.gameObject).center - LocalBounds(padlock, body.gameObject).center);
+                if (axis != Vector3.up) upright = Quaternion.FromToRotation(axis, Vector3.up);
+            }
+            if (upright != Quaternion.identity)
+            {
+                Object.DestroyImmediate(m);
+                m = PlaceCandado(padlock, 0f, upright);
+                body = FindChild(m.transform, "Body");
+            }
+            if (body != null)
+            {
+                Bounds bb = LocalBounds(padlock, body.gameObject);
+                if (bb.size.x < bb.size.z)
+                {
+                    Object.DestroyImmediate(m);
+                    m = PlaceCandado(padlock, 90f, upright);
+                }
+            }
+            foreach (string part in new[] { "Body", "ShackleLeft", "ShackleRight", "ShackleTop" })
+            {
+                Transform t = padlock.Find(part);   // our cube parts (direct children), not the model's
+                if (t != null && t.GetComponent<Renderer>() != null) t.GetComponent<Renderer>().enabled = false;
+            }
+            Debug.Log("[Loto] Padlock dressed with the team's model (" + LocalBounds(padlock, m).size.ToString("F3") + " m).");
+        }
+
+        static GameObject PlaceCandado(Transform padlock, float yaw, Quaternion extra)
+        {
+            GameObject m = PlaceFbx(CandadoPath, "Model_Candado", padlock, 0.08f, 0.12f, yaw, extra, true);
+            if (m == null) return null;
+            // Our tag is the one that shows the student's name: the model's goes. Destroyed, not hidden, so the
+            // bounds below do not count it.
+            for (int i = 0; i < 2; i++)
+            {
+                Transform tag = FindChild(m.transform, i == 0 ? "Tag" : "TagFace");
+                if (tag != null) Object.DestroyImmediate(tag.gameObject);
+            }
+            Bounds b = LocalBounds(padlock, m);
+            float footprint = Mathf.Max(b.size.x, b.size.z);
+            if (footprint < 0.0001f || b.size.y < 0.0001f) return m;
+            float k = Mathf.Min(0.08f / footprint, 0.12f / b.size.y);
+            m.transform.localScale *= k;
+            b = LocalBounds(padlock, m);
+            m.transform.localPosition -= b.center;   // centered on the padlock's origin, like the cube padlock
+            return m;
+        }
+
         /// <summary>The signed unit axis (±X, ±Y, ±Z) closest to v.</summary>
         static Vector3 DominantAxis(Vector3 v)
         {

@@ -26,6 +26,8 @@ namespace Loto
         float _pressedUntil;
         float _nextPressTime;
         Collider _collider;
+        DangerZone _machine;
+        StatusPanel _panel;
 
         void Awake()
         {
@@ -35,7 +37,12 @@ namespace Loto
 
         void OnEnable() { if (session != null) session.Changed += Refresh; }
         void OnDisable() { if (session != null) session.Changed -= Refresh; }
-        void Start() { Refresh(); }
+        void Start()
+        {
+            _machine = Object.FindAnyObjectByType<DangerZone>();
+            _panel = Object.FindAnyObjectByType<StatusPanel>();
+            Refresh();
+        }
 
         void OnTriggerEnter(Collider other)
         {
@@ -50,7 +57,21 @@ namespace Loto
             if (Time.unscaledTime < _nextPressTime) return;
             _nextPressTime = Time.unscaledTime + 0.7f;
             _pressedUntil = Time.unscaledTime + 0.25f;
-            if (action == ButtonAction.Verify) session.OnVerify();
+            if (action == ButtonAction.Verify)
+            {
+                // Stored energy: the machine is off but still turns. Trying it now proves nothing, so the try
+                // is not reported and the panel says why. Only with the lever down (with the lever up the
+                // Referee already answers with its own error).
+                if (_machine != null && _machine.Moving && _machine.lever != null && _machine.lever.IsOff && !session.Ended)
+                {
+                    if (_panel != null)
+                        _panel.ShowHint("<b>ESPERA: TODAVÍA SE MUEVE</b>\nApagar no alcanza: la polea sigue girando por inercia.\nVerifica cuando esté quieta (" +
+                            Mathf.CeilToInt(_machine.SecondsToStop) + " s).", 2.5f);
+                    Debug.Log("[Loto] Verify while the machine still coasts: not reported, hint shown.");
+                    return;
+                }
+                session.OnVerify();
+            }
             else if (action == ButtonAction.Retry)
             {
                 if (session.Ended) session.RetryOrNext();
