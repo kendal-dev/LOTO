@@ -60,3 +60,20 @@ pitch/presentacion/img/local/
 unity/Assets/Resources/DevAgentSettings.asset
 unity/Assets/Resources/DevAgentSettings.asset.meta
 unity/TempAssembly.dll
+
+# --- Internal docs, kept local (not in the public repo) ---
+TRASPASO.md
+CLAUDE.md
+docs/AUDITORIA-FABLE.md
+docs/AUDITORIA-2026-11-21.md
+docs/TRABAJO-CODEX-OPUS.md
+docs/ENCARGO-PANEL-DOCENTE.md
+docs/LLEGADA-SABADO.md
+docs/INVESTIGACION-MODELOS-3D.md
+docs/PLAN.md
+docs/GUION-PITCH.md
+docs/PREGUNTAS-JURADO.md
+docs/DIAPOSITIVAS.md
+docs/VIDEO-RESPALDO.md
+docs/PRUEBAS-USUARIOS.md
+pitch/
