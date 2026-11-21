@@ -14,8 +14,8 @@ track Educación. Equipo de Santa Cruz de la Sierra: Daniel, Denzel y Orlando. [
 El bloqueo y etiquetado es el procedimiento que evita que una máquina se encienda mientras alguien la está
 reparando o limpiando. Creemos que lo que falta es el hábito de hacer los pasos en orden, y el hábito se entrena.
 
-- **Bolivia:** en 2024 el Ministerio de Trabajo recibió **12.210 denuncias de accidentes de trabajo**:
-  **79 fatales**, **7 en Santa Cruz**. Es el total de accidentes, no solo los de falta de bloqueo.
+- **Bolivia:** en 2024 el Ministerio de Trabajo recibió **12.210 denuncias de accidentes de trabajo** y registró
+  **79 accidentes fatales**, **7 en Santa Cruz**. Es el total de accidentes, no solo los de falta de bloqueo.
 - **EE. UU. (OSHA):** cumplir el estándar de bloqueo previene unas **120 muertes y 50.000 lesiones por año**
   ([hoja informativa de OSHA](https://www.osha.gov/sites/default/files/publications/OSHAFS3529.pdf)).
 - **EE. UU.:** un estudio de 592 accidentes fatales de bloqueo en fábricas de EE. UU. (datos de 1984 a 1997) encontró que en el **58,8 %** **no se intentó ningún bloqueo** ([Bulzacchelli et al., 2008, estudio financiado por NIOSH](https://stacks.cdc.gov/view/cdc/186886/cdc_186886_DS1.pdf)).
@@ -35,8 +35,8 @@ El estudiante tiene que seguir el orden:
 3. **Apretar VERIFICAR** (la prueba de arranque: la máquina no arranca).
 4. **Recién ahí, tocar la máquina.**
 
-Si toca la máquina antes de tiempo, **la simulación se frena** y un cartel le explica qué hizo mal. Cada intento
-llega a un **panel web** donde el docente ve quién completó, en qué paso se equivocan más y cuánto tardan.
+Si toca la máquina antes de tiempo, **la simulación se frena** y un cartel le explica qué hizo mal. Al terminar, cada
+intento se manda a un **panel web** (si la red falla, la práctica sigue y ese intento no queda registrado), donde el docente ve quién completó, en qué paso se equivocan más y cuánto tardan.
 
 ### Lo que ve y oye el estudiante
 
@@ -55,14 +55,14 @@ texturas ni audio de terceros**. Los materiales son opacos para no abrir huecos 
 
 ### Lo que ve el docente
 
-Un panel web que se actualiza solo, con cada intento: estudiante, si completó o en qué paso falló, el código del
-error, el tiempo y la secuencia de acciones. Se puede descargar en CSV.
+Un panel web que se actualiza solo, con cada intento: estudiante, si completó o en qué paso falló, el error con
+su explicación, el tiempo y la hora. Se descarga en CSV, que trae además el código del error y la secuencia de acciones.
 
 ## Qué tiene de distinto
 
-Revisamos los simuladores de bloqueo que hay en el mercado: Ludus Global (España), Yoy Simulators (Chile),
+Revisamos la información pública de nueve simuladores de bloqueo que ya existen: Ludus Global (España), Yoy Simulators (Chile),
 PIXO VR, EHS VR, iQ3Connect, NxtTech, Roundtable Learning, Linde LVA y uno en Steam. **Todos son de realidad
-virtual cerrada** (el estudiante está en una planta virtual) y se venden a empresas por cotización.
+virtual cerrada** (el estudiante está en una planta virtual) y la mayoría se vende a empresas por cotización.
 
 - **Realidad mixta en el taller real:** en los que revisamos, ninguno pone la máquina en el aula real, sin aislar al estudiante en un mundo virtual.
 - **El alfiler aparece solo después del error**, en vez de separar «modo guiado» y «modo examen».
@@ -71,12 +71,12 @@ virtual cerrada** (el estudiante está en una planta virtual) y se venden a empr
 
 Ya hay formación técnica inmersiva en la región: Yoy Simulators trabaja con Duoc UC (Chile) con más de 3.000
 estudiantes y Meta Quest ([nota del 21/01/2026](https://www.mineriayfuturo.cl/noticias/chile-impulsa-el-mayor-proyecto-de-capacitacion-tecnica-virtual-de-latinoamerica-con-realidad-virtual/)),
-y en Bolivia existen simuladores técnicos como los de Mi Teleférico e IA Technology. Lo nuestro no es ser los
+y en Bolivia encontramos simulación técnica inmersiva en Cochabamba (IA Technology). Lo nuestro no es ser los
 primeros en usar simulación, sino **llevar la práctica al taller real y darle los datos al docente en un panel web**.
 En Santa Cruz no encontramos ningún simulador inmersivo de formación técnica.
 
-**El equipo ya lo hizo una vez:** el 14-15/11/2026, en la misma UCB, el equipo MARSXR (del que forman parte Daniel
-y Orlando) ganó el 1.er lugar y Best Mission Concept del NASA Space Apps Santa Cruz con Walkback, una app de
+**Daniel y Orlando ya lo hicieron una vez:** el 14-15/11/2026, en la misma UCB, estuvieron en el equipo MARSXR,
+que ganó el 1.er lugar y Best Mission Concept del NASA Space Apps, sede Santa Cruz con Walkback, una app de
 realidad mixta para Meta Quest 3.
 
 **Lo que no hacemos y otros sí:** catálogo de muchas máquinas, gráficos realistas, alineación formal con normas
