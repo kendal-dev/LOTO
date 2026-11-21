@@ -16,11 +16,14 @@ namespace Loto.EditorTools
 
         static partial void DressMachine(Transform machine, GameObject body)
         {
+            // The team's hammer mill (Modelos/Prototipo1) first; the Kenney machine if it is missing.
+            GameObject model = PlaceMolino(machine);
+            bool molino = model != null;
             // About 0.20 x 0.22 x 0.25 m once scaled: close to the 0.20 m cube the rest was measured against.
-            GameObject model = PlaceModel("machine-window", machine, 0.25f, 0.22f, 0f);
+            if (!molino) model = PlaceModel("machine-window", machine, 0.25f, 0.22f, 0f);
             if (model == null)
             {
-                Debug.LogWarning("[Loto] " + KenneyFolder + "/machine-window.fbx not found: the machine stays a cube.");
+                Debug.LogWarning("[Loto] No machine model found: the machine stays a cube.");
                 return;
             }
             body.GetComponent<MeshRenderer>().enabled = false;
@@ -48,11 +51,42 @@ namespace Loto.EditorTools
                 zone.localPosition = new Vector3(b.center.x, b.center.y, b.center.z);
                 trigger.size = Vector3.Max(b.size + Vector3.one * 0.07f, new Vector3(0.27f, 0.28f, 0.27f));
             }
-            Debug.Log("[Loto] Machine dressed with Kenney machine-window (" + b.size.x.ToString("F2") + " x " +
-                b.size.y.ToString("F2") + " x " + b.size.z.ToString("F2") + " m).");
+            Debug.Log("[Loto] Machine dressed with " + (molino ? "the team's Molino" : "Kenney machine-window") + " (" +
+                b.size.x.ToString("F2") + " x " + b.size.y.ToString("F2") + " x " + b.size.z.ToString("F2") + " m).");
 
+            if (molino)
+            {
+                // Label and lamp on the points the modeler marked; hide the marker cubes.
+                Transform labelPoint = FindChild(model.transform, "LabelPoint");
+                Transform lampPoint = FindChild(model.transform, "LampPoint");
+                if (label != null && labelPoint != null)
+                    label.localPosition = machine.InverseTransformPoint(labelPoint.position) + new Vector3(0f, 0f, -0.004f);
+                if (lamp != null && lampPoint != null)
+                    lamp.localPosition = machine.InverseTransformPoint(lampPoint.position) + new Vector3(0f, 0f, -0.006f);
+                foreach (Transform marker in new[] { labelPoint, lampPoint })
+                    if (marker != null) { var mr = marker.GetComponent<MeshRenderer>(); if (mr != null) mr.enabled = false; }
+
+                // The pulley is what turns: it spins about its thinnest axis (the disk's axis), wrapped in a holder whose
+                // local Y is that axis, because DangerZone turns its spinner about local Y.
+                Transform rotorPivot = FindChild(model.transform, "RotorPivot");
+                Transform rotor = FindChild(model.transform, "Rotor");
+                DangerZone dz = zone != null ? zone.GetComponent<DangerZone>() : null;
+                if (rotorPivot != null && rotor != null && dz != null)
+                {
+                    Bounds rb = LocalBounds(machine, rotor.gameObject);
+                    Vector3 axis = rb.size.x <= rb.size.y && rb.size.x <= rb.size.z ? Vector3.right
+                        : rb.size.y <= rb.size.z ? Vector3.up : Vector3.forward;
+                    Transform holder = Group("RotorSpin", machine, machine.InverseTransformPoint(rotorPivot.position));
+                    holder.localRotation = Quaternion.FromToRotation(Vector3.up, axis);
+                    rotorPivot.SetParent(holder, true);
+                    Wire(dz, "spinner", holder);
+                    dz.spinDegreesPerSecond = 300f;
+                    if (spinner != null) spinner.gameObject.SetActive(false);   // the old blades are not needed
+                    Debug.Log("[Loto] Molino pulley spins about machine-local " + axis + ".");
+                }
+            }
             // The part that turns becomes a gear (same Spinner object: DangerZone keeps turning it).
-            if (spinner != null)
+            else if (spinner != null)
             {
                 GameObject cog = PlaceModel("cog-a", spinner, 0.18f, 0.035f, 0f, true);
                 if (cog != null)
@@ -64,7 +98,7 @@ namespace Loto.EditorTools
             }
 
             // A conveyor through the machine's tunnel (along X): it reads as a production line.
-            GameObject belt = PlaceModel("conveyor-long", machine, 0.40f, 0.07f, 0f, false, true);
+            GameObject belt = molino ? null : PlaceModel("conveyor-long", machine, 0.40f, 0.07f, 0f, false, true);
             if (belt != null) belt.transform.localPosition += new Vector3(0f, 0.002f, 0f);
 
             // The power cable from the back of the switch box to the back of the machine, along the back of the table
@@ -87,6 +121,28 @@ namespace Loto.EditorTools
                 flow.path = new[] { p0, p1, p2 };
                 flow.shaker = model.transform;
             }
+        }
+
+        public const string MolinoPath = "Assets/ThirdParty/Molino/Molino.fbx";
+
+        /// <summary>
+        /// The team's hammer mill, scaled to the table and turned so its LabelPoint face looks at the user (-Z).
+        /// Null if the file is missing.
+        /// </summary>
+        static GameObject PlaceMolino(Transform machine)
+        {
+            GameObject m = PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, 0f, Quaternion.identity, true);
+            if (m == null) return null;
+            Transform labelPoint = FindChild(m.transform, "LabelPoint");
+            if (labelPoint == null) return m;
+            Bounds b = LocalBounds(machine, m);
+            Vector3 toLabel = machine.InverseTransformPoint(labelPoint.position) - b.center;
+            toLabel.y = 0f;
+            if (toLabel.sqrMagnitude < 0.000001f) return m;
+            float yaw = Vector3.SignedAngle(toLabel, Vector3.back, Vector3.up);
+            if (Mathf.Abs(yaw) < 1f) return m;
+            Object.DestroyImmediate(m);
+            return PlaceFbx(MolinoPath, "Model_Molino", machine, 0.27f, 0.25f, yaw, Quaternion.identity, true);
         }
 
         /// <summary>A straight cable (opaque cylinder, no collider) between two board-local points.</summary>
@@ -132,11 +188,20 @@ namespace Loto.EditorTools
 
         static GameObject PlaceModelRaw(string name, Transform parent, float maxFootprint, float maxHeight, float yaw, Quaternion extra)
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(KenneyFolder + "/" + name + ".fbx");
+            return PlaceFbx(KenneyFolder + "/" + name + ".fbx", "Model_" + name, parent, maxFootprint, maxHeight, yaw, extra, false);
+        }
+
+        /// <summary>
+        /// Any FBX, placed like the Kenney ones. keepColors: each imported material becomes an opaque URP Lit material
+        /// of the same color (the team's own models, solid colors per part); otherwise the Kenney palette texture.
+        /// </summary>
+        static GameObject PlaceFbx(string path, string objectName, Transform parent, float maxFootprint, float maxHeight, float yaw, Quaternion extra, bool keepColors)
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path);
             if (prefab == null) return null;
             var model = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
             PrefabUtility.UnpackPrefabInstance(model, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-            model.name = "Model_" + name;
+            model.name = objectName;
             model.transform.SetParent(parent, false);
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.Euler(0f, yaw, 0f) * extra;
@@ -152,7 +217,17 @@ namespace Loto.EditorTools
                 r.receiveShadows = false;
                 Material[] slots = r.sharedMaterials;
                 for (int i = 0; i < slots.Length; i++)
-                    slots[i] = slots[i] != null && slots[i].name.ToLowerInvariant().Contains("glass") ? glass : colormap;
+                {
+                    if (keepColors)
+                    {
+                        Color c = slots[i] != null && slots[i].HasProperty("_Color") ? slots[i].color : new Color(0.5f, 0.5f, 0.5f);
+                        if (slots[i] != null && slots[i].HasProperty("_BaseColor")) c = slots[i].GetColor("_BaseColor");
+                        c.a = 1f;   // opaque, always
+                        string matName = "Team_" + (slots[i] != null ? slots[i].name : "Part").Replace(" ", "_").Replace("/", "_");
+                        slots[i] = MakeMaterial(matName, "Universal Render Pipeline/Lit", c, 0.25f);
+                    }
+                    else slots[i] = slots[i] != null && slots[i].name.ToLowerInvariant().Contains("glass") ? glass : colormap;
+                }
                 r.sharedMaterials = slots;
             }
 
