@@ -55,3 +55,7 @@ Desktop.ini
 # --- Pitch: local photos (consent) and Claude Code local config ---
 pitch/presentacion/img/local/
 .claude/
+
+# --- Meta Immersive Debugger: local access token and LAN address (H104) ---
+unity/Assets/Resources/DevAgentSettings.asset
+unity/Assets/Resources/DevAgentSettings.asset.meta
