@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel del docente - Simulador LOTO</title>
+<style>
+  :root { --bg:#0f1418; --panel:#182128; --line:#2a3741; --text:#e8eef2; --muted:#93a4b0; --ok:#4fd08a; --bad:#ff6b6b; --accent:#f2b84b; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font:20px/1.45 "Segoe UI", system-ui, sans-serif; }
+  main { max-width:1400px; margin:0 auto; padding:24px 16px 48px; }
+  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:20px; }
+  h1 { font-size:32px; margin:0; text-wrap:balance; }
+  h1 small { display:block; font-size:17px; font-weight:400; color:var(--muted); }
+  .buttons { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  button, a.btn { font:inherit; font-size:18px; padding:10px 18px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); cursor:pointer; text-decoration:none; }
+  button:hover, a.btn:hover { border-color:var(--accent); }
+  button.danger { color:var(--bad); }
+  #status { font-size:16px; color:var(--muted); }
+  #status.down { color:var(--bad); }
+  .cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; margin-bottom:22px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; }
+  .card .label { font-size:16px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  .card .value { font-size:44px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.15; }
+  .card .value.small { font-size:26px; }
+  .card .sub { font-size:16px; color:var(--muted); }
+  .wrap { overflow-x:auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; }
+  table { width:100%; border-collapse:collapse; min-width:860px; }
+  th, td { padding:13px 16px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
+  tr:last-child td { border-bottom:0; }
+  td.num { font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .ok { color:var(--ok); font-weight:700; }
+  .bad { color:var(--bad); font-weight:700; }
+  .explain { display:block; font-size:16px; color:var(--muted); max-width:60ch; }
+  .empty { padding:40px 16px; text-align:center; color:var(--muted); }
+  footer { margin-top:16px; font-size:15px; color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Simulador LOTO <small>Panel del docente - bloqueo y etiquetado</small></h1>
+    <div class="buttons">
+      <span id="status">conectando...</span>
+      <a class="btn" href="/api/attempts.csv">Descargar CSV</a>
+      <button class="danger" id="clear">Borrar todo</button>
+    </div>
+  </header>
+
+  <section class="cards">
+    <div class="card"><div class="label">Intentos</div><div class="value" id="total">0</div></div>
+    <div class="card"><div class="label">Completados sin error</div><div class="value" id="clean">0</div><div class="sub" id="cleanPct"></div></div>
+    <div class="card"><div class="label">Error más frecuente</div><div class="value small" id="top">-</div><div class="sub" id="topCount"></div></div>
+  </section>
+
+  <div class="wrap">
+    <table>
+      <thead><tr><th>Estudiante</th><th>Resultado</th><th>Error</th><th>Paso</th><th>Segundos</th><th>Hora</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty">Todavía no hay intentos. Aparecen solos cuando un estudiante termina o se equivoca.</div>
+  </div>
+  <footer>Servidor de prueba: los datos viven en memoria y se pierden al reiniciarlo.</footer>
+</main>
+
+<script>
+  var errorTexts = {};
+  var STEP_NAMES = { 1: 'Apagar', 2: 'Candado', 3: 'Verificar', 4: 'Tocar máquina', 5: 'Completo' };
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text; // textContent: student names are untrusted
+    return e;
+  }
+
+  function render(list) {
+    var clean = list.filter(function (a) { return a.ok && !a.errorCode; }).length;
+    document.getElementById('total').textContent = list.length;
+    document.getElementById('clean').textContent = clean;
+    document.getElementById('cleanPct').textContent = list.length ? Math.round(clean * 100 / list.length) + ' % de los intentos' : '';
+
+    var counts = {}, top = null;
+    list.forEach(function (a) {
+      if (!a.errorCode) return;
+      counts[a.errorCode] = (counts[a.errorCode] || 0) + 1;
+      if (!top || counts[a.errorCode] > counts[top]) top = a.errorCode;
+    });
+    document.getElementById('top').textContent = top ? (errorTexts[top] ? errorTexts[top].title : top) : '-';
+    document.getElementById('topCount').textContent = top ? counts[top] + (counts[top] === 1 ? ' vez' : ' veces') : '';
+
+    var rows = document.getElementById('rows');
+    rows.textContent = '';
+    list.forEach(function (a) {
+      var tr = el('tr');
+      tr.appendChild(el('td', '', a.student));
+      tr.appendChild(el('td', a.ok ? 'ok' : 'bad', a.ok ? 'Correcto' : 'Error'));
+      var tdErr = el('td');
+      if (a.errorCode) {
+        var t = errorTexts[a.errorCode];
+        tdErr.appendChild(el('span', '', t ? t.title : a.errorCode));
+        if (a.explanation) tdErr.appendChild(el('span', 'explain', a.explanation));
+      } else {
+        tdErr.textContent = '-';
+      }
+      tr.appendChild(tdErr);
+      tr.appendChild(el('td', 'num', a.step + (STEP_NAMES[a.step] ? ' - ' + STEP_NAMES[a.step] : '')));
+      tr.appendChild(el('td', 'num', Number(a.seconds).toFixed(1)));
+      tr.appendChild(el('td', 'num', new Date(a.serverTime).toLocaleTimeString('es-BO')));
+      rows.appendChild(tr);
+    });
+    document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+  }
+
+  function setStatus(up) {
+    var s = document.getElementById('status');
+    s.textContent = up ? 'en vivo - ' + new Date().toLocaleTimeString('es-BO') : 'sin conexión con el servidor';
+    s.className = up ? '' : 'down';
+  }
+
+  function refresh() {
+    fetch('/api/attempts').then(function (r) { return r.json(); })
+      .then(function (list) { render(list); setStatus(true); })
+      .catch(function () { setStatus(false); });
+  }
+
+  document.getElementById('clear').addEventListener('click', function () {
+    if (!confirm('¿Borrar todos los intentos? No se puede deshacer.')) return;
+    fetch('/api/attempts', { method: 'DELETE' }).then(refresh);
+  });
+
+  fetch('/api/errors').then(function (r) { return r.json(); })
+    .then(function (t) { errorTexts = t; })
+    .catch(function () {})
+    .then(function () { refresh(); setInterval(refresh, 2000); });
+</script>
+</body>
+</html>
