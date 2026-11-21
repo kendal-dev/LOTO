@@ -1,7 +1,8 @@
 # Bienvenida al equipo — Simulador LOTO en realidad mixta
 
 Para quien se suma hoy (sábado 21/11). Leé esto entero (5 minutos), después [`MODULOS.md`](MODULOS.md) y tu lista
-de tareas. Si sos el desarrollador web: [`TAREAS-WEB.md`](TAREAS-WEB.md).
+de tareas. Desarrollador web: [`TAREAS-WEB.md`](TAREAS-WEB.md). Denzel (servidor y entrega):
+[`TAREAS-SERVIDOR.md`](TAREAS-SERVIDOR.md).
 
 ## Qué es
 

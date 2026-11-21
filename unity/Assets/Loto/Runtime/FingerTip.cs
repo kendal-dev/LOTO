@@ -18,11 +18,32 @@ namespace Loto
         /// <summary>False while there is no hand or controller to follow (the sphere is parked far away).</summary>
         public bool Tracking { get; private set; }
 
+        /// <summary>
+        /// True for a moment after the sphere appears or jumps (tracking found again, recenter when the headset is put
+        /// on, a hand swapped for a controller): the machine and the buttons ignore it then. Seen on 21/11 in the
+        /// Quest: putting the headset on ended the attempt with "touched the machine" at 0.0 s.
+        /// </summary>
+        public bool JustArrived { get { return Time.unscaledTime - _arrivedAt < ArrivalGrace; } }
+
+        const float ArrivalGrace = 0.6f;
+        const float JumpDistance = 0.30f;
         static readonly Vector3 Parked = new Vector3(0f, -100f, 0f);
         Hand[] _hands;
         float _nextSearch;
+        float _arrivedAt = -10f;
+        Vector3 _lastPosition = Parked;
+        bool _wasTracking;
 
         void LateUpdate()
+        {
+            Follow();
+            bool jumped = (transform.position - _lastPosition).sqrMagnitude > JumpDistance * JumpDistance;
+            if (Tracking && (!_wasTracking || jumped)) _arrivedAt = Time.unscaledTime;
+            _wasTracking = Tracking;
+            _lastPosition = transform.position;
+        }
+
+        void Follow()
         {
             if (_hands == null || (_hands.Length == 0 && Time.unscaledTime > _nextSearch))
             {

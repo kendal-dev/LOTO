@@ -34,6 +34,7 @@ namespace Loto.EditorTools
 
         static partial void BuildRig(Parts parts);
         static partial void BuildHands(Parts parts);
+        static partial void DressMachine(Transform machine, GameObject body);
 
         public const string ScenePath = "Assets/Loto/Scenes/Loto.unity";
         public const string DesktopScenePath = "Assets/Loto/Scenes/LotoDesktop.unity";
@@ -378,7 +379,7 @@ namespace Loto.EditorTools
             Material darkMaterial = MakeMaterial("Dark", "Universal Render Pipeline/Lit", new Color(0.10f, 0.10f, 0.12f), 0.2f);
 
             Transform machine = Group("Machine", parts.board, MachinePosition);
-            Part(PrimitiveType.Cube, "Body", machine, new Vector3(0f, MachineSide / 2f, 0f), Vector3.one * MachineSide, machineMaterial);
+            GameObject body = Part(PrimitiveType.Cube, "Body", machine, new Vector3(0f, MachineSide / 2f, 0f), Vector3.one * MachineSide, machineMaterial);
             Label(machine, "MachineLabel", "MÁQUINA", new Vector3(0f, MachineSide / 2f, -MachineSide / 2f - 0.0015f),
                 Quaternion.identity, 360, 100, 0.18f, 66, Color.white);
 
@@ -435,6 +436,7 @@ namespace Loto.EditorTools
             Wire(energy, "sfx", sfxSource);
             Wire(energy, "tryOutLabel", tryOutCanvas);
             tryOutCanvas.SetActive(false);
+            DressMachine(machine, body);   // LotoSceneBuilder.Models.cs: the Kenney model, if present
             return dangerZone;
         }
 

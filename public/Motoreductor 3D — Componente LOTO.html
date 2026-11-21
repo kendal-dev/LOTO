@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Motoreductor 3D — LOTO</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #060608;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    #motor-container {
+      position: relative;
+      width: 820px;
+      height: 580px;
+    }
+    body.vista-2d { width: 100%; height: 100%; min-height: 100%; }
+    body.vista-2d #motor-container { width: 100%; height: 100%; }
+    body.vista-2d #rpm-display,
+    body.vista-2d #loto-status,
+    body.vista-2d #mode-btn,
+    body.vista-2d #reset-btn,
+    body.vista-2d #hint { display: none; }
+    body.vista-2d #part-tooltip {
+      border: 0;
+      background: transparent;
+      backdrop-filter: none;
+      box-shadow: none;
+      padding: 0;
+    }
+
+    #motor-canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: grab;
+    }
+    #motor-canvas:active { cursor: grabbing; }
+
+    /* ── UI ── */
+    #ui-overlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    /* RPM */
+    #rpm-display {
+      position: absolute;
+      top: 20px;
+      left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .rpm-value {
+      font-size: 36px;
+      font-weight: 700;
+      color: #F5C800;
+      line-height: 1;
+      letter-spacing: -1px;
+      font-variant-numeric: tabular-nums;
+      text-shadow: 0 0 20px rgba(245,200,0,0.6);
+    }
+    .rpm-label {
+      font-size: 10px;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 3px;
+    }
+
+    /* Pasos */
+    #loto-status {
+      position: absolute;
+      top: 20px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      pointer-events: all;
+    }
+    .loto-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.25);
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.4s;
+    }
+    .loto-step.active { color: #F5C800; }
+    .loto-step.done   { color: rgba(245,200,0,0.4); }
+    .step-indicator {
+      width: 20px; height: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 600;
+      transition: all 0.4s;
+      flex-shrink: 0;
+    }
+    .loto-step.active .step-indicator {
+      border-color: #F5C800;
+      background: rgba(245,200,0,0.12);
+      color: #F5C800;
+      box-shadow: 0 0 10px rgba(245,200,0,0.3);
+    }
+    .loto-step.done .step-indicator {
+      border-color: rgba(245,200,0,0.3);
+      color: rgba(245,200,0,0.5);
+    }
+
+    /* Tooltip */
+    #part-tooltip {
+      position: absolute;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(6,6,8,0.85);
+      border: 1px solid rgba(245,200,0,0.25);
+      padding: 8px 18px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      opacity: 0;
+      transition: opacity 0.25s;
+      white-space: nowrap;
+      backdrop-filter: blur(8px);
+    }
+    #part-tooltip.visible { opacity: 1; }
+    .tt-dot { width: 7px; height: 7px; border-radius: 50%; background: #F5C800; flex-shrink: 0; box-shadow: 0 0 8px #F5C800; }
+    .tt-name { font-size: 12px; font-weight: 600; color: #F5C800; letter-spacing: 0.5px; }
+    .tt-desc { font-size: 11px; color: rgba(255,255,255,0.4); margin-left: 4px; }
+
+    /* Hint */
+    #hint {
+      position: absolute;
+      bottom: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 10px;
+      color: rgba(255,255,255,0.18);
+      letter-spacing: 1px;
+      white-space: nowrap;
+    }
+
+    /* Reset */
+    #reset-btn {
+      position: absolute;
+      bottom: 36px;
+      right: 24px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.25);
+      font-size: 10px;
+      padding: 6px 14px;
+      cursor: pointer;
+      pointer-events: all;
+      transition: all 0.2s;
+      font-family: inherit;
+      letter-spacing: 1px;
+    }
+    #reset-btn:hover { border-color: rgba(245,200,0,0.3); color: rgba(245,200,0,0.6); }
+
+    /* Modo toggle */
+    #mode-btn {
+      position: absolute;
+      bottom: 36px;
+      left: 24px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.25);
+      font-size: 10px;
+      padding: 6px 14px;
+      cursor: pointer;
+      pointer-events: all;
+      transition: all 0.2s;
+      font-family: inherit;
+      letter-spacing: 1px;
+    }
+    #mode-btn:hover { border-color: rgba(245,200,0,0.3); color: rgba(245,200,0,0.6); }
+  </style>
+</head>
+<body>
+
+<div id="motor-container">
+  <canvas id="motor-canvas"></canvas>
+  <div id="ui-overlay">
+    <div id="rpm-display">
+      <div class="rpm-value" id="rpm-value">1450</div>
+      <div class="rpm-label">RPM</div>
+    </div>
+
+    <div id="loto-status">
+      <div class="loto-step" id="step-1" onclick="activateStep(1)">
+        <div class="step-indicator">1</div>Cortar energía
+      </div>
+      <div class="loto-step" id="step-2" onclick="activateStep(2)">
+        <div class="step-indicator">2</div>Poner candado
+      </div>
+      <div class="loto-step" id="step-3" onclick="activateStep(3)">
+        <div class="step-indicator">3</div>Verificar
+      </div>
+      <div class="loto-step" id="step-4" onclick="activateStep(4)">
+        <div class="step-indicator">4</div>Intervenir
+      </div>
+    </div>
+
+    <div id="part-tooltip">
+      <div class="tt-dot"></div>
+      <span class="tt-name" id="tt-name">—</span>
+      <span class="tt-desc" id="tt-desc">—</span>
+    </div>
+
+    <div id="hint">Arrastrá para rotar · Hover para identificar partes · Clic en pasos LOTO</div>
+
+    <button id="mode-btn" onclick="toggleMode()">Modo sólido</button>
+    <button id="reset-btn" onclick="resetSteps()">Reiniciar</button>
+  </div>
+</div>
+
+<script>
+// ════════════════════════════════════════
+//  SETUP
+// ════════════════════════════════════════
+const vista2d = /(?:\?|&)vista=2d(?:&|$)/.test(location.search);
+if (vista2d) {
+  document.body.classList.add('vista-2d');
+  var hint2d = document.getElementById('hint');
+  if (hint2d) hint2d.textContent = 'Vista 2D · pasá el cursor para ver cada parte · clic en los pasos';
+}
+
+const canvas  = document.getElementById('motor-canvas');
+const container = document.getElementById('motor-container');
+const W = container.offsetWidth || 820;
+const H = container.offsetHeight || 580;
+
+const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(W, H);
+renderer.setClearColor(0x000000, 0);
+renderer.sortObjects = true;
+
+const scene  = new THREE.Scene();
+const camera = vista2d
+  ? new THREE.OrthographicCamera(-4.2 * W / H, 4.2 * W / H, 4.2, -4.2, 0.1, 100)
+  : new THREE.PerspectiveCamera(42, W / H, 0.1, 100);
+camera.position.set(vista2d ? 0 : 5.5, vista2d ? 0.4 : 3.2, vista2d ? 14 : 7.5);
+camera.lookAt(0, 0, 0);
+
+// ════════════════════════════════════════
+//  LUCES — look rayos X: fría + bordes
+// ════════════════════════════════════════
+const ambLight = new THREE.AmbientLight(0xffffff, 0.15);
+scene.add(ambLight);
+
+// Luz clave fría (azul-blanco, como en la imagen)
+const keyLight = new THREE.DirectionalLight(0xC8DFFF, 2.0);
+keyLight.position.set(4, 7, 5);
+scene.add(keyLight);
+
+// Luz de relleno lateral
+const fillLight = new THREE.DirectionalLight(0xE0F0FF, 0.6);
+fillLight.position.set(-5, 2, 3);
+scene.add(fillLight);
+
+// Luz de borde inferior (rim)
+const rimLight  = new THREE.DirectionalLight(0xADD8FF, 0.8);
+rimLight.position.set(0, -4, -6);
+scene.add(rimLight);
+
+// Luz LOTO amarilla (punto de energía)
+const lotoLight = new THREE.PointLight(0xF5C800, 0, 8);
+lotoLight.position.set(2.0, 0.65, 2.0);
+scene.add(lotoLight);
+
+// ════════════════════════════════════════
+//  MATERIALES — MODO WIREFRAME XRAY
+// ════════════════════════════════════════
+let xrayMode = true; // comienza en modo xray
+
+// Colores xray (como la imagen: casi blanco translúcido con bordes brillantes)
+function makeMat(opts = {}) {
+  return new THREE.MeshPhongMaterial({
+    color:       opts.color       ?? 0xffffff,
+    emissive:    opts.emissive    ?? 0x112233,
+    specular:    opts.specular    ?? 0xffffff,
+    shininess:   opts.shininess   ?? 120,
+    transparent: true,
+    opacity:     opts.opacity     ?? 0.12,
+    side:        THREE.DoubleSide,
+    depthWrite:  false,
+  });
+}
+
+function makeWireMat(color = 0xffffff, opacity = 0.55) {
+  return new THREE.MeshBasicMaterial({
+    color, wireframe: true, transparent: true, opacity,
+    depthWrite: false,
+  });
+}
+
+// Materiales sólidos (modo alternativo)
+function makeSolidMat(hex, metalness = 0.8, roughness = 0.3) {
+  return new THREE.MeshStandardMaterial({ color: hex, metalness, roughness });
+}
+
+// Pares [xray-mesh-mat, xray-wire-mat, solid-mat]
+const matDefs = {
+  body:   { xC: 0xC8E8FF, xO: 0.10, wC: 0xA0CFFF, wO: 0.45, s: 0x2a2a2a },
+  motor:  { xC: 0xDDE8FF, xO: 0.09, wC: 0xC0D8FF, wO: 0.50, s: 0x3a3a3a },
+  shaft:  { xC: 0xFFFFFF, xO: 0.18, wC: 0xE0F0FF, wO: 0.70, s: 0x111111 },
+  gear:   { xC: 0xC0D8FF, xO: 0.11, wC: 0x90B8FF, wO: 0.45, s: 0x444444 },
+  lever:  { xC: 0xFF8080, xO: 0.18, wC: 0xFF5555, wO: 0.65, s: 0xCC2200 },
+  yellow: { xC: 0xFFEC80, xO: 0.22, wC: 0xF5C800, wO: 0.80, s: 0xF5C800 },
+  orange: { xC: 0xFFB870, xO: 0.20, wC: 0xFF8800, wO: 0.70, s: 0xFF6B00 },
+  fin:    { xC: 0x90B0D0, xO: 0.08, wC: 0x6090B0, wO: 0.35, s: 0x222222 },
+  seal:   { xC: 0xE0E8F0, xO: 0.14, wC: 0xB0C8D8, wO: 0.55, s: 0x666666 },
+};
+
+// Registros de meshes por categoría para cambiar modo
+const meshRegistry = []; // { mesh, wireMesh, key }
+
+// ════════════════════════════════════════
+//  GRUPO PRINCIPAL
+// ════════════════════════════════════════
+const motorGroup = new THREE.Group();
+scene.add(motorGroup);
+const raycastTargets = [];
+
+function buildPart(geo, key, name, desc) {
+  const meshMat = makeMat({
+    color: matDefs[key].xC, opacity: matDefs[key].xO
+  });
+  const wireMat = makeWireMat(matDefs[key].wC, matDefs[key].wO);
+  const solidMat = makeSolidMat(matDefs[key].s);
+
+  const mesh = new THREE.Mesh(geo, meshMat);
+  const wire = new THREE.Mesh(geo, wireMat);
+
+  mesh.userData = { name, desc, key };
+  wire.userData  = { name, desc, key };
+
+  meshRegistry.push({ mesh, wire, key });
+  if (name) {
+    raycastTargets.push(mesh);
+    raycastTargets.push(wire);
+  }
+
+  return { mesh, wire, solidMat };
+}
+
+function addToGroup(group, part) {
+  group.add(part.mesh);
+  group.add(part.wire);
+}
+
+// ════════════════════════════════════════
+//  CONSTRUCCIÓN DEL MOTOR
+// ════════════════════════════════════════
+
+// — Cuerpo reductor —
+const reducerGeo = new THREE.BoxGeometry(2.4, 1.6, 1.8);
+const reducerPart = buildPart(reducerGeo, 'body', 'Caja reductora', 'Aloja engranajes de reducción 1:20');
+addToGroup(motorGroup, reducerPart);
+
+// Tapa frontal
+const rfGeo = new THREE.BoxGeometry(2.52, 1.72, 0.1);
+const rfPart = buildPart(rfGeo, 'body', '', '');
+rfPart.mesh.position.z = 0.95;
+rfPart.wire.position.z = 0.95;
+addToGroup(motorGroup, rfPart);
+
+// Costillas reductor
+for (let i = -4; i <= 4; i++) {
+  const ribGeo = new THREE.BoxGeometry(0.05, 1.65, 1.82);
+  const ribPart = buildPart(ribGeo, 'fin', '', '');
+  ribPart.mesh.position.x = i * 0.27;
+  ribPart.wire.position.x = i * 0.27;
+  addToGroup(motorGroup, ribPart);
+}
+
+// — Motor eléctrico —
+const motGeo = new THREE.CylinderGeometry(0.72, 0.72, 2.2, 32);
+const motPart = buildPart(motGeo, 'motor', 'Motor eléctrico', '1.5 kW — 1450 RPM — 380V trifásico');
+motPart.mesh.rotation.z = motPart.wire.rotation.z = Math.PI / 2;
+motPart.mesh.position.x = motPart.wire.position.x = 2.5;
+addToGroup(motorGroup, motPart);
+
+// Aletas motor
+for (let i = 0; i < 14; i++) {
+  const angle = (i / 14) * Math.PI * 2;
+  const finGeo = new THREE.BoxGeometry(1.9, 0.04, 0.07);
+  const finPart = buildPart(finGeo, 'fin', '', '');
+  const y = Math.sin(angle) * 0.76;
+  const z = Math.cos(angle) * 0.76;
+  finPart.mesh.position.set(2.5, y, z);
+  finPart.wire.position.set(2.5, y, z);
+  finPart.mesh.rotation.x = finPart.wire.rotation.x = angle;
+  addToGroup(motorGroup, finPart);
+}
+
+// Tapas motor
+[-1.15, 1.15].forEach((x, i) => {
+  const capGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.1, 32);
+  const capPart = buildPart(capGeo, 'body', '', '');
+  capPart.mesh.rotation.z = capPart.wire.rotation.z = Math.PI / 2;
+  capPart.mesh.position.x = capPart.wire.position.x = 2.5 + x;
+  addToGroup(motorGroup, capPart);
+});
+
+// Carcasa ventilador
+const fanHGeo = new THREE.CylinderGeometry(0.65, 0.65, 0.4, 32);
+const fanHPart = buildPart(fanHGeo, 'body', 'Ventilador de enfriamiento', 'Extrae calor del devanado');
+fanHPart.mesh.rotation.z = fanHPart.wire.rotation.z = Math.PI / 2;
+fanHPart.mesh.position.x = fanHPart.wire.position.x = 3.75;
+addToGroup(motorGroup, fanHPart);
+
+// Palas ventilador (grupo animable)
+const fanGroup = new THREE.Group();
+fanGroup.position.set(3.75, 0, 0);
+fanGroup.rotation.x = Math.PI / 2;
+motorGroup.add(fanGroup);
+for (let i = 0; i < 8; i++) {
+  const angle = (i / 8) * Math.PI * 2;
+  const bladeGeo = new THREE.BoxGeometry(0.07, 0.48, 0.04);
+  const bladePart = buildPart(bladeGeo, 'fin', '', '');
+  bladePart.mesh.position.set(Math.cos(angle) * 0.3, Math.sin(angle) * 0.3, 0);
+  bladePart.wire.position.set(Math.cos(angle) * 0.3, Math.sin(angle) * 0.3, 0);
+  bladePart.mesh.rotation.z = bladePart.wire.rotation.z = angle + Math.PI / 4;
+  fanGroup.add(bladePart.mesh);
+  fanGroup.add(bladePart.wire);
+}
+
+// — Eje de salida —
+const shaftGroup = new THREE.Group();
+motorGroup.add(shaftGroup);
+
+const shaftGeo = new THREE.CylinderGeometry(0.14, 0.14, 1.6, 20);
+const shaftPart = buildPart(shaftGeo, 'shaft', 'Eje de salida', 'Transmite el par reducido a la carga');
+shaftPart.mesh.rotation.z = shaftPart.wire.rotation.z = Math.PI / 2;
+shaftPart.mesh.position.x = shaftPart.wire.position.x = -1.95;
+shaftGroup.add(shaftPart.mesh);
+shaftGroup.add(shaftPart.wire);
+
+// Cuñero
+const keyGeo = new THREE.BoxGeometry(1.4, 0.07, 0.07);
+const keyPart = buildPart(keyGeo, 'shaft', '', '');
+keyPart.mesh.position.set(-1.95, 0.14, 0);
+keyPart.wire.position.set(-1.95, 0.14, 0);
+shaftGroup.add(keyPart.mesh);
+shaftGroup.add(keyPart.wire);
+
+// Sello retén
+const sealGeo = new THREE.TorusGeometry(0.17, 0.038, 10, 28);
+const sealPart = buildPart(sealGeo, 'seal', 'Sello retén', 'Evita fuga de lubricante');
+sealPart.mesh.rotation.y = sealPart.wire.rotation.y = Math.PI / 2;
+sealPart.mesh.position.x = sealPart.wire.position.x = -1.26;
+addToGroup(motorGroup, sealPart);
+
+// — Patas de montaje —
+[[-0.9, -0.6], [0.9, -0.6]].forEach(([x, z]) => {
+  const footGeo = new THREE.BoxGeometry(0.5, 0.18, 0.5);
+  const footPart = buildPart(footGeo, 'body', 'Pata de montaje', 'Anclaje al bastidor');
+  footPart.mesh.position.set(x, -0.9, z);
+  footPart.wire.position.set(x, -0.9, z);
+  addToGroup(motorGroup, footPart);
+
+  const boltGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.28, 8);
+  const boltPart = buildPart(boltGeo, 'shaft', '', '');
+  boltPart.mesh.position.set(x, -1.06, z);
+  boltPart.wire.position.set(x, -1.06, z);
+  addToGroup(motorGroup, boltPart);
+});
+
+// — Engranajes —
+// Corona
+const gear1Geo = new THREE.CylinderGeometry(0.55, 0.55, 0.15, 24);
+const gear1Part = buildPart(gear1Geo, 'gear', 'Engranaje corona', 'Relación de reducción 1:20');
+const gear1Group = new THREE.Group();
+gear1Group.position.set(-0.3, 0.2, 1.05);
+gear1Group.rotation.x = Math.PI / 2;
+gear1Group.add(gear1Part.mesh);
+gear1Group.add(gear1Part.wire);
+// Dientes corona
+for (let i = 0; i < 20; i++) {
+  const angle = (i / 20) * Math.PI * 2;
+  const tGeo = new THREE.BoxGeometry(0.08, 0.14, 0.09);
+  const tPart = buildPart(tGeo, 'gear', '', '');
+  tPart.mesh.position.set(Math.cos(angle)*0.57, Math.sin(angle)*0.57, 0);
+  tPart.wire.position.set(Math.cos(angle)*0.57, Math.sin(angle)*0.57, 0);
+  tPart.mesh.rotation.z = tPart.wire.rotation.z = angle;
+  gear1Group.add(tPart.mesh);
+  gear1Group.add(tPart.wire);
+}
+motorGroup.add(gear1Group);
+
+// Piñón
+const gear2Geo = new THREE.CylinderGeometry(0.22, 0.22, 0.15, 12);
+const gear2Part = buildPart(gear2Geo, 'gear', 'Piñón de entrada', 'Conectado al eje del motor');
+const gear2Group = new THREE.Group();
+gear2Group.position.set(0.56, 0.2, 1.05);
+gear2Group.rotation.x = Math.PI / 2;
+gear2Group.add(gear2Part.mesh);
+gear2Group.add(gear2Part.wire);
+for (let i = 0; i < 8; i++) {
+  const angle = (i / 8) * Math.PI * 2;
+  const tGeo = new THREE.BoxGeometry(0.06, 0.1, 0.09);
+  const tPart = buildPart(tGeo, 'gear', '', '');
+  tPart.mesh.position.set(Math.cos(angle)*0.24, Math.sin(angle)*0.24, 0);
+  tPart.wire.position.set(Math.cos(angle)*0.24, Math.sin(angle)*0.24, 0);
+  tPart.mesh.rotation.z = tPart.wire.rotation.z = angle;
+  gear2Group.add(tPart.mesh);
+  gear2Group.add(tPart.wire);
+}
+motorGroup.add(gear2Group);
+
+// — Palanca seccionador —
+const leverGroup = new THREE.Group();
+leverGroup.position.set(2.0, 0.65, 0.98);
+motorGroup.add(leverGroup);
+
+const lBaseGeo = new THREE.BoxGeometry(0.5, 0.35, 0.1);
+const lBasePart = buildPart(lBaseGeo, 'body', 'Seccionador principal', 'Corta la alimentación — Paso 1 LOTO');
+addToGroup(leverGroup, lBasePart);
+
+const leverGeo = new THREE.BoxGeometry(0.08, 0.5, 0.08);
+const leverMeshMat = makeMat({ color: 0xFF6060, opacity: 0.28, emissive: 0x440000 });
+const leverWireMat = makeWireMat(0xFF4444, 0.75);
+const leverMesh = new THREE.Mesh(leverGeo, leverMeshMat);
+const leverWire = new THREE.Mesh(leverGeo, leverWireMat);
+leverMesh.position.set(0, 0.3, 0.05);
+leverWire.position.set(0, 0.3, 0.05);
+leverMesh.name = 'lever';
+leverWire.name = 'leverW';
+leverGroup.add(leverMesh);
+leverGroup.add(leverWire);
+meshRegistry.push({ mesh: leverMesh, wire: leverWire, key: 'lever' });
+
+// Punto energía
+const dotGeo = new THREE.SphereGeometry(0.07, 12, 12);
+const dotMeshMat = makeMat({ color: 0xFF4040, opacity: 0.6, emissive: 0x880000 });
+const dotWireMat = makeWireMat(0xFF2222, 0.9);
+const dotMesh = new THREE.Mesh(dotGeo, dotMeshMat);
+const dotWire = new THREE.Mesh(dotGeo, dotWireMat);
+dotMesh.position.set(0.1, 0.12, 0.1);
+dotWire.position.set(0.1, 0.12, 0.1);
+dotMesh.name = 'powerDot';
+leverGroup.add(dotMesh);
+leverGroup.add(dotWire);
+
+// — Candado LOTO —
+const lockGroup = new THREE.Group();
+lockGroup.position.set(1.9, 0.6, 1.15);
+lockGroup.scale.set(0, 0, 0);
+motorGroup.add(lockGroup);
+
+const lockBodyGeo = new THREE.BoxGeometry(0.28, 0.24, 0.1);
+const lockMeshMat = makeMat({ color: 0xFFEC40, opacity: 0.45, emissive: 0x332200 });
+const lockWireMat = makeWireMat(0xF5C800, 0.95);
+const lockMesh = new THREE.Mesh(lockBodyGeo, lockMeshMat);
+const lockWire = new THREE.Mesh(lockBodyGeo, lockWireMat);
+lockGroup.add(lockMesh);
+lockGroup.add(lockWire);
+raycastTargets.push(lockMesh);
+lockMesh.userData = { name: 'Candado LOTO', desc: 'Bloqueo físico de energía — Paso 2 LOTO' };
+
+const shackleGeo = new THREE.TorusGeometry(0.1, 0.022, 8, 16, Math.PI);
+const shackleMesh = new THREE.Mesh(shackleGeo, lockMeshMat);
+const shackleWire = new THREE.Mesh(shackleGeo, lockWireMat);
+shackleMesh.position.set(0, 0.17, 0);
+shackleWire.position.set(0, 0.17, 0);
+shackleMesh.rotation.z = shackleWire.rotation.z = Math.PI;
+lockGroup.add(shackleMesh);
+lockGroup.add(shackleWire);
+
+// Tarjeta PELIGRO
+const tagGroup = new THREE.Group();
+tagGroup.position.set(2.14, 0.3, 1.1);
+tagGroup.scale.set(0, 0, 0);
+motorGroup.add(tagGroup);
+
+const tagGeo = new THREE.BoxGeometry(0.22, 0.32, 0.015);
+const tagMeshMat = makeMat({ color: 0xFF9040, opacity: 0.5, emissive: 0x331100 });
+const tagWireMat = makeWireMat(0xFF6B00, 0.9);
+const tagMesh = new THREE.Mesh(tagGeo, tagMeshMat);
+const tagWire = new THREE.Mesh(tagGeo, tagWireMat);
+tagGroup.add(tagMesh);
+tagGroup.add(tagWire);
+
+// — Caja de bornes —
+const jboxGeo = new THREE.BoxGeometry(0.5, 0.4, 0.3);
+const jboxPart = buildPart(jboxGeo, 'body', 'Caja de bornes', 'Conexión 380V trifásica');
+jboxPart.mesh.position.set(2.5, 0.85, 0.3);
+jboxPart.wire.position.set(2.5, 0.85, 0.3);
+addToGroup(motorGroup, jboxPart);
+
+// ════════════════════════════════════════
+//  POSICIÓN INICIAL
+// ════════════════════════════════════════
+motorGroup.rotation.y = -0.4;
+motorGroup.rotation.x = 0.1;
+
+// ════════════════════════════════════════
+//  MODO XRAY / SÓLIDO
+// ════════════════════════════════════════
+function applyXray() {
+  meshRegistry.forEach(({ mesh, wire, key }) => {
+    const d = matDefs[key] || matDefs.body;
+    mesh.material = makeMat({ color: d.xC, opacity: d.xO });
+    wire.material = makeWireMat(d.wC, d.wO);
+    mesh.visible = true;
+    wire.visible = true;
+  });
+  // Palanca y lock especiales
+  leverMesh.material = makeMat({ color: 0xFF6060, opacity: 0.28, emissive: 0x440000 });
+  leverWire.material = makeWireMat(0xFF4444, 0.75);
+  lockMesh.material  = makeMat({ color: 0xFFEC40, opacity: 0.45, emissive: 0x332200 });
+  lockWire.material  = makeWireMat(0xF5C800, 0.95);
+  document.getElementById('mode-btn').textContent = 'Modo sólido';
+}
+
+function applySolid() {
+  meshRegistry.forEach(({ mesh, wire, key }) => {
+    const d = matDefs[key] || matDefs.body;
+    mesh.material = makeSolidMat(d.s);
+    wire.visible = false;
+    mesh.material.transparent = false;
+    mesh.visible = true;
+  });
+  document.getElementById('mode-btn').textContent = 'Modo rayos X';
+}
+
+function toggleMode() {
+  xrayMode = !xrayMode;
+  xrayMode ? applyXray() : applySolid();
+}
+
+// ════════════════════════════════════════
+//  INTERACCIÓN MOUSE
+// ════════════════════════════════════════
+let isDragging = false;
+let prevMouse  = { x: 0, y: 0 };
+let targetRot  = vista2d ? { x: 0.12, y: -0.55 } : { x: 0.1,  y: -0.4 };
+let currentRot = { x: targetRot.x, y: targetRot.y };
+const mouse    = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+
+canvas.addEventListener('mousedown', e => {
+  isDragging = true;
+  prevMouse  = { x: e.clientX, y: e.clientY };
+});
+window.addEventListener('mouseup', () => { isDragging = false; });
+window.addEventListener('mousemove', e => {
+  if (isDragging) {
+    targetRot.y += (e.clientX - prevMouse.x) * 0.008;
+    targetRot.x += (e.clientY - prevMouse.y) * 0.005;
+    targetRot.x = Math.max(-0.65, Math.min(0.65, targetRot.x));
+    prevMouse = { x: e.clientX, y: e.clientY };
+  }
+  const rect = canvas.getBoundingClientRect();
+  mouse.x = ((e.clientX - rect.left) / rect.width)  * 2 - 1;
+  mouse.y = -((e.clientY - rect.top)  / rect.height) * 2 + 1;
+});
+
+canvas.addEventListener('touchstart', e => {
+  isDragging = true;
+  prevMouse  = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+window.addEventListener('touchend', () => { isDragging = false; });
+window.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  targetRot.y += (e.touches[0].clientX - prevMouse.x) * 0.008;
+  targetRot.x += (e.touches[0].clientY - prevMouse.y) * 0.005;
+  prevMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}, { passive: true });
+
+// ════════════════════════════════════════
+//  ESTADO LOTO
+// ════════════════════════════════════════
+let currentStep = 0;
+let motorSpeed  = 1.0;
+let rpmValue    = 1450;
+
+function activateStep(step) {
+  if (step !== currentStep + 1) return;
+  currentStep = step;
+  document.querySelectorAll('.loto-step').forEach((el, i) => {
+    el.classList.remove('active', 'done');
+    if (i + 1 < step) el.classList.add('done');
+    if (i + 1 === step) el.classList.add('active');
+  });
+  if (step === 1) { animateLever(true); motorSpeed = 0; animateRPM(0); lotoLight.intensity = 0; }
+  if (step === 2) { animateLock(true); }
+  if (step === 3) { flashVerify(); }
+  if (step === 4) {
+    keyLight.color.set(0x88FF99);
+    setTimeout(() => keyLight.color.set(0xC8DFFF), 1800);
+  }
+}
+
+function resetSteps() {
+  currentStep = 0;
+  motorSpeed  = 1.0;
+  animateRPM(1450);
+  animateLever(false);
+  animateLock(false);
+  keyLight.color.set(0xC8DFFF);
+  lotoLight.intensity = 0;
+  document.querySelectorAll('.loto-step').forEach(el => el.classList.remove('active', 'done'));
+}
+
+function animateLever(down) {
+  const lev  = leverGroup.getObjectByName('lever');
+  const levW = leverGroup.getObjectByName('leverW');
+  if (!lev) return;
+  animateVal(lev.rotation, 'z', down ? -Math.PI / 3 : 0, 600);
+  animateVal(levW.rotation, 'z', down ? -Math.PI / 3 : 0, 600);
+  dotMesh.material.color.set(down ? 0x444444 : 0xFF4040);
+  dotMesh.material.emissive.set(down ? 0x000000 : 0x880000);
+  lotoLight.intensity = down ? 0 : 0;
+}
+
+function animateLock(show) {
+  animateScale(lockGroup, show ? 1 : 0, 400);
+  animateScale(tagGroup,  show ? 1 : 0, 500);
+  if (show) lotoLight.intensity = 1.5;
+}
+
+function flashVerify() {
+  let n = 0;
+  const id = setInterval(() => {
+    keyLight.color.set(n % 2 === 0 ? 0xFFFFFF : 0xC8DFFF);
+    ambLight.intensity = n % 2 === 0 ? 0.5 : 0.15;
+    if (++n > 7) { clearInterval(id); ambLight.intensity = 0.15; keyLight.color.set(0xC8DFFF); }
+  }, 160);
+}
+
+function animateRPM(target) {
+  const start = rpmValue, t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - t0) / 1400, 1);
+    const e = p < 0.5 ? 2*p*p : -1+(4-2*p)*p;
+    rpmValue = Math.round(start + (target - start) * e);
+    document.getElementById('rpm-value').textContent = rpmValue;
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+function animateVal(obj, prop, target, dur) {
+  const start = obj[prop], t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    obj[prop] = start + (target - start) * (1 - Math.pow(1-p, 3));
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+function animateScale(obj, target, dur) {
+  const s0 = obj.scale.x, t0 = performance.now();
+  (function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    const v = s0 + (target - s0) * (1 - Math.pow(1-p, 3));
+    obj.scale.set(v, v, v);
+    if (p < 1) requestAnimationFrame(tick);
+  })(t0);
+}
+
+// ════════════════════════════════════════
+//  TOOLTIP RAYCASTING
+// ════════════════════════════════════════
+const tooltip = document.getElementById('part-tooltip');
+
+function checkHover() {
+  if (isDragging) { tooltip.classList.remove('visible'); return; }
+  raycaster.setFromCamera(mouse, camera);
+  const hits = raycaster.intersectObjects(raycastTargets);
+  if (hits.length && hits[0].object.userData.name) {
+    const d = hits[0].object.userData;
+    document.getElementById('tt-name').textContent = d.name;
+    document.getElementById('tt-desc').textContent = d.desc;
+    tooltip.classList.add('visible');
+  } else {
+    tooltip.classList.remove('visible');
+  }
+}
+
+// ════════════════════════════════════════
+//  RENDER LOOP
+// ════════════════════════════════════════
+let clock = 0;
+(function animate() {
+  requestAnimationFrame(animate);
+  clock += 0.016;
+
+  currentRot.x += (targetRot.x - currentRot.x) * 0.07;
+  currentRot.y += (targetRot.y - currentRot.y) * 0.07;
+  motorGroup.rotation.x = currentRot.x;
+  motorGroup.rotation.y = currentRot.y;
+
+  if (!vista2d && !isDragging) targetRot.y += 0.0025;
+
+  // Eje y ventilador
+  shaftGroup.rotation.x += 0.025 * motorSpeed;
+  fanGroup.rotation.z   += 0.07  * motorSpeed;
+  gear1Group.rotation.z -= 0.01  * motorSpeed;
+  gear2Group.rotation.z += 0.025 * motorSpeed;
+
+  // Pulso suave en luz rim (efecto "energía circulando")
+  rimLight.intensity = 0.6 + Math.sin(clock * 2.0) * 0.2;
+  keyLight.intensity = 2.0 + Math.sin(clock * 0.8) * 0.15;
+
+  checkHover();
+  renderer.render(scene, camera);
+})();
+
+// ════════════════════════════════════════
+//  RESIZE
+// ════════════════════════════════════════
+window.addEventListener('resize', () => {
+  const w = container.offsetWidth, h = container.offsetHeight;
+  if (camera.isOrthographicCamera) {
+    const frustum = 4.2;
+    camera.left = -frustum * w / h;
+    camera.right = frustum * w / h;
+    camera.top = frustum;
+    camera.bottom = -frustum;
+  } else {
+    camera.aspect = w / h;
+  }
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+});
+</script>
+</body>
+</html>

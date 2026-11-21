@@ -3,137 +3,498 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Panel del docente - Simulador LOTO</title>
+<title>Panel del docente — Simulador LOTO</title>
 <style>
-  :root { --bg:#0f1418; --panel:#182128; --line:#2a3741; --text:#e8eef2; --muted:#93a4b0; --ok:#4fd08a; --bad:#ff6b6b; --accent:#f2b84b; }
+  :root {
+    --bg: #101410;
+    --panel: #1a221c;
+    --ink: #e7efe8;
+    --muted: #93a49a;
+    --line: #2c3a32;
+    --ok: #7CE08A;
+    --bad: #FF6B6B;
+    --accent: #FFA61A;
+  }
   * { box-sizing: border-box; }
-  body { margin:0; background:var(--bg); color:var(--text); font:20px/1.45 "Segoe UI", system-ui, sans-serif; }
-  main { max-width:1400px; margin:0 auto; padding:24px 16px 48px; }
-  header { display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; margin-bottom:20px; }
-  h1 { font-size:32px; margin:0; text-wrap:balance; }
-  h1 small { display:block; font-size:17px; font-weight:400; color:var(--muted); }
-  .buttons { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
-  button, a.btn { font:inherit; font-size:18px; padding:10px 18px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--text); cursor:pointer; text-decoration:none; }
-  button:hover, a.btn:hover { border-color:var(--accent); }
-  button.danger { color:var(--bad); }
-  #status { font-size:16px; color:var(--muted); }
-  #status.down { color:var(--bad); }
-  .cards { display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:14px; margin-bottom:22px; }
-  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:16px 20px; }
-  .card .label { font-size:16px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
-  .card .value { font-size:44px; font-weight:700; font-variant-numeric:tabular-nums; line-height:1.15; }
-  .card .value.small { font-size:26px; }
-  .card .sub { font-size:16px; color:var(--muted); }
-  .wrap { overflow-x:auto; background:var(--panel); border:1px solid var(--line); border-radius:12px; }
-  table { width:100%; border-collapse:collapse; min-width:860px; }
-  th, td { padding:13px 16px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { font-size:15px; color:var(--muted); text-transform:uppercase; letter-spacing:.05em; }
-  tr:last-child td { border-bottom:0; }
-  td.num { font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .ok { color:var(--ok); font-weight:700; }
-  .bad { color:var(--bad); font-weight:700; }
-  .explain { display:block; font-size:16px; color:var(--muted); max-width:60ch; }
-  .empty { padding:40px 16px; text-align:center; color:var(--muted); }
-  footer { margin-top:16px; font-size:15px; color:var(--muted); }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font: 20px/1.4 "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+  }
+  .tape {
+    height: 8px;
+    background: repeating-linear-gradient(
+      -45deg,
+      var(--accent) 0 10px,
+      #1c160c 10px 20px
+    );
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 22px 28px 40px; }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px 24px;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .eyebrow {
+    margin: 0 0 4px;
+    font: 700 15px/1 "Bahnschrift", "Segoe UI", sans-serif;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  h1 {
+    margin: 0;
+    font: 700 40px/1.05 "Bahnschrift", "Segoe UI", sans-serif;
+    letter-spacing: -0.02em;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font: 600 18px/1.2 "Bahnschrift", "Segoe UI", sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  #status { font-size: 16px; color: var(--muted); }
+  #status::before {
+    content: "";
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    vertical-align: 1px;
+  }
+  #status.down { color: var(--bad); }
+  #status.down::before { background: var(--bad); }
+  button, a.btn {
+    font: 600 18px/1 "Segoe UI", system-ui, sans-serif;
+    padding: 10px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  button.danger { color: var(--bad); border-color: #5a3030; }
+  button:hover, a.btn:hover { border-color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 0 0 22px;
+  }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 14px 18px 16px;
+    min-width: 0;
+  }
+  .stat .label {
+    margin: 0;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .stat .value {
+    margin: 6px 0 0;
+    font: 700 64px/0.95 "Bahnschrift", "Segoe UI", sans-serif;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.03em;
+  }
+  .stat .value.words {
+    font-size: 28px;
+    line-height: 1.15;
+    letter-spacing: 0;
+  }
+  .stat .sub {
+    margin: 4px 0 0;
+    min-height: 1.2em;
+    font-size: 16px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .ok { color: var(--ok); }
+  .bad { color: var(--bad); }
+  .stat .value.ok, .stat .sub.ok { color: var(--ok); }
+  .board, .list-wrap {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 16px 18px 18px;
+    margin-bottom: 16px;
+  }
+  #chart { width: 100%; height: 132px; display: block; }
+  #chart[hidden], #chart-empty[hidden], #empty[hidden] { display: none; }
+  #chart text {
+    fill: var(--ink);
+    font: 18px "Segoe UI", system-ui, sans-serif;
+  }
+  #chart .count {
+    font: 700 20px "Bahnschrift", "Segoe UI", sans-serif;
+    font-variant-numeric: tabular-nums;
+  }
+  #chart .track { fill: #314038; }
+  #chart .fill { fill: var(--bad); }
+  .note {
+    margin: 0;
+    color: var(--muted);
+    font-size: 22px;
+  }
+  .tags { display: flex; flex-direction: column; gap: 10px; }
+  .tag {
+    display: grid;
+    grid-template-columns: 22px 1fr auto;
+    gap: 14px;
+    align-items: start;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-left-width: 6px;
+  }
+  .tag.complete { border-left-color: var(--ok); }
+  .tag.fail { border-left-color: var(--bad); }
+  .hole {
+    width: 18px;
+    height: 18px;
+    margin-top: 4px;
+    border-radius: 50%;
+    border: 3px solid var(--line);
+    background:
+      radial-gradient(circle at center, var(--bg) 45%, transparent 46%),
+      var(--panel);
+  }
+  .who {
+    margin: 0;
+    font: 700 22px/1.2 "Bahnschrift", "Segoe UI", sans-serif;
+  }
+  .result { margin: 2px 0 0; font-weight: 700; }
+  .explain { margin: 4px 0 0; max-width: 62ch; color: var(--muted); font-size: 17px; }
+  .meta {
+    margin: 0;
+    text-align: right;
+    font: 18px/1.35 "Cascadia Mono", Consolas, ui-monospace, monospace;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .tag.is-new { animation: tag-in 0.4s ease; }
+  @keyframes tag-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: none; }
+  }
+  footer { margin: 8px 0 0; font-size: 15px; color: var(--muted); }
+  dialog {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 22px 22px 18px;
+    max-width: 420px;
+  }
+  dialog::backdrop { background: rgba(8, 10, 8, 0.72); }
+  dialog h2 {
+    margin: 0 0 8px;
+    color: var(--ink);
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 26px;
+  }
+  dialog p { margin: 0 0 18px; }
+  dialog .actions { justify-content: flex-end; }
+  @media (max-width: 800px) {
+    main { padding: 16px; }
+    h1 { font-size: 32px; }
+    header { align-items: stretch; }
+    .actions { width: 100%; }
+    #status { flex: 1 1 100%; }
+    .stats { grid-template-columns: 1fr; }
+    .stat .value { font-size: 52px; }
+    .tag { grid-template-columns: 22px 1fr; }
+    .meta { grid-column: 2; text-align: left; white-space: normal; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .tag.is-new { animation: none; }
+  }
+
+  body.proyector { font-size: 22px; overflow: hidden; }
+  body.proyector .who { color: var(--ink); }
+  body.proyector main { max-width: none; padding: 8px 22px 12px; }
+  body.proyector header { margin-bottom: 8px; }
+  body.proyector h1 { font-size: 30px; }
+  body.proyector h2 { margin-bottom: 4px; }
+  body.proyector .stats { margin-bottom: 8px; }
+  body.proyector .stat { padding: 8px 14px 10px; }
+  body.proyector .stat .value { font-size: 56px; }
+  body.proyector .stat .value.words { font-size: 26px; }
+  body.proyector .board, body.proyector .list-wrap { padding: 8px 14px 10px; margin-bottom: 8px; }
+  body.proyector #chart { height: 120px; }
+  body.proyector #list-title { display: none; }
+  body.proyector .tags { gap: 6px; }
+  body.proyector .tag { align-items: center; padding: 6px 10px; }
+  body.proyector .who, body.proyector .result { display: inline; font-size: 22px; }
+  body.proyector .who { margin-right: 10px; }
+  body.proyector .result + .result::before { content: " · "; font-weight: 400; }
+  body.proyector .explain { display: none; }
+  body.proyector [data-admin] { display: none !important; }
 </style>
 </head>
 <body>
+<div class="tape" aria-hidden="true"></div>
 <main>
   <header>
-    <h1>Simulador LOTO <small>Panel del docente - bloqueo y etiquetado</small></h1>
-    <div class="buttons">
-      <span id="status">conectando...</span>
+    <div>
+      <p class="eyebrow">Simulador LOTO</p>
+      <h1>Panel del docente</h1>
+    </div>
+    <div class="actions" data-admin>
+      <span id="status">Conectando…</span>
       <a class="btn" href="/api/attempts.csv">Descargar CSV</a>
-      <button class="danger" id="clear">Borrar todo</button>
+      <button class="danger" type="button" id="clear">Borrar</button>
     </div>
   </header>
 
-  <section class="cards">
-    <div class="card"><div class="label">Intentos</div><div class="value" id="total">0</div></div>
-    <div class="card"><div class="label">Completados sin error</div><div class="value" id="clean">0</div><div class="sub" id="cleanPct"></div></div>
-    <div class="card"><div class="label">Error más frecuente</div><div class="value small" id="top">-</div><div class="sub" id="topCount"></div></div>
+  <section class="stats" aria-label="Resumen de la clase">
+    <article class="stat">
+      <p class="label">Intentos</p>
+      <p class="value" id="total">0</p>
+      <p class="sub" id="total-sub"></p>
+    </article>
+    <article class="stat">
+      <p class="label">Completados sin error</p>
+      <p class="value" id="clean">0</p>
+      <p class="sub" id="clean-pct"></p>
+    </article>
+    <article class="stat">
+      <p class="label">Error que más frenó</p>
+      <p class="value words" id="top">—</p>
+      <p class="sub" id="top-count"></p>
+    </article>
   </section>
 
-  <div class="wrap">
-    <table>
-      <thead><tr><th>Estudiante</th><th>Resultado</th><th>Error</th><th>Paso</th><th>Segundos</th><th>Hora</th></tr></thead>
-      <tbody id="rows"></tbody>
-    </table>
-    <div class="empty" id="empty">Todavía no hay intentos. Aparecen solos cuando un estudiante termina o se equivoca.</div>
-  </div>
-  <footer>Servidor de prueba: los datos viven en memoria y se pierden al reiniciarlo.</footer>
+  <section class="board" aria-labelledby="chart-title">
+    <h2 id="chart-title">En qué paso falla la clase</h2>
+    <svg id="chart" viewBox="0 0 1000 132" role="img" aria-labelledby="chart-title"></svg>
+    <p class="note" id="chart-empty" hidden>Sin errores todavía</p>
+  </section>
+
+  <section class="list-wrap" aria-labelledby="list-title">
+    <h2 id="list-title">Intentos</h2>
+    <div class="tags" id="tags"></div>
+    <p class="note" id="empty">Esperando el primer intento del visor</p>
+  </section>
+
+  <footer data-admin>Servidor de prueba: los datos viven en memoria y se pierden al reiniciarlo.</footer>
 </main>
 
+<dialog id="confirm" aria-labelledby="confirm-title">
+  <h2 id="confirm-title">Borrar todos los intentos</h2>
+  <p>Se pierden de esta sesión. No se puede deshacer.</p>
+  <div class="actions">
+    <button type="button" id="cancel">Cancelar</button>
+    <button class="danger" type="button" id="do-clear">Borrar</button>
+  </div>
+</dialog>
+
 <script>
+  var projector = /(?:\?|&)proyector=1(?:&|$)/.test(location.search);
+  if (projector) document.body.classList.add('proyector');
+
+  var STEPS = [
+    { n: 1, name: 'Apagar' },
+    { n: 2, name: 'Candado' },
+    { n: 3, name: 'Verificar' },
+    { n: 4, name: 'Tocar' }
+  ];
   var errorTexts = {};
-  var STEP_NAMES = { 1: 'Apagar', 2: 'Candado', 3: 'Verificar', 4: 'Tocar máquina', 5: 'Completo' };
+  var seen = Object.create(null);
+  var firstPaint = true;
+  var SVG = 'http://www.w3.org/2000/svg';
 
   function el(tag, cls, text) {
-    var e = document.createElement(tag);
-    if (cls) e.className = cls;
-    if (text !== undefined) e.textContent = text; // textContent: student names are untrusted
-    return e;
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function svg(name, attrs) {
+    var node = document.createElementNS(SVG, name);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (key) {
+        node.setAttribute(key, attrs[key]);
+      });
+    }
+    return node;
+  }
+
+  function stepName(n) {
+    for (var i = 0; i < STEPS.length; i++) {
+      if (STEPS[i].n === n) return STEPS[i].name;
+    }
+    return '';
+  }
+
+  function clock(iso) {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '—';
+    return d.toLocaleTimeString('es-BO', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  }
+
+  function drawChart(counts, any) {
+    var chart = document.getElementById('chart');
+    var empty = document.getElementById('chart-empty');
+    chart.textContent = '';
+    if (!any) {
+      chart.hidden = true;
+      empty.hidden = false;
+      return;
+    }
+    chart.hidden = false;
+    empty.hidden = true;
+    var max = 1;
+    STEPS.forEach(function (s) { if (counts[s.n] > max) max = counts[s.n]; });
+    STEPS.forEach(function (s, i) {
+      var y = i * 33;
+      var count = counts[s.n] || 0;
+      var w = Math.round((count / max) * 680);
+      var label = svg('text', { x: '0', y: String(y + 22) });
+      label.textContent = s.n + '  ' + s.name;
+      chart.appendChild(label);
+      chart.appendChild(svg('rect', {
+        class: 'track', x: '188', y: String(y + 4), width: '680', height: '22', rx: '2'
+      }));
+      if (w > 0) {
+        chart.appendChild(svg('rect', {
+          class: 'fill', x: '188', y: String(y + 4), width: String(w), height: '22', rx: '2'
+        }));
+      }
+      var num = svg('text', { class: 'count', x: '884', y: String(y + 22) });
+      num.textContent = String(count);
+      chart.appendChild(num);
+    });
   }
 
   function render(list) {
     var clean = list.filter(function (a) { return a.ok && !a.errorCode; }).length;
-    document.getElementById('total').textContent = list.length;
-    document.getElementById('clean').textContent = clean;
-    document.getElementById('cleanPct').textContent = list.length ? Math.round(clean * 100 / list.length) + ' % de los intentos' : '';
+    document.getElementById('total').textContent = String(list.length);
+    var cleanNode = document.getElementById('clean');
+    var pctNode = document.getElementById('clean-pct');
+    cleanNode.textContent = String(clean);
+    cleanNode.className = 'value' + (clean ? ' ok' : '');
+    pctNode.textContent = list.length ? Math.round(clean * 100 / list.length) + ' %' : '';
+    pctNode.className = 'sub' + (clean ? ' ok' : '');
 
-    var counts = {}, top = null;
+    var counts = {};
+    var top = null;
     list.forEach(function (a) {
-      if (!a.errorCode) return;
+      if (a.ok || !a.errorCode) return;
       counts[a.errorCode] = (counts[a.errorCode] || 0) + 1;
       if (!top || counts[a.errorCode] > counts[top]) top = a.errorCode;
     });
-    document.getElementById('top').textContent = top ? (errorTexts[top] ? errorTexts[top].title : top) : '-';
-    document.getElementById('topCount').textContent = top ? counts[top] + (counts[top] === 1 ? ' vez' : ' veces') : '';
+    var topNode = document.getElementById('top');
+    var title = top ? (errorTexts[top] ? errorTexts[top].title : top) : '—';
+    topNode.textContent = title;
+    topNode.className = 'value words' + (top ? ' bad' : '');
+    document.getElementById('top-count').textContent = top
+      ? counts[top] + (counts[top] === 1 ? ' vez' : ' veces')
+      : '';
 
-    var rows = document.getElementById('rows');
-    rows.textContent = '';
+    var byStep = { 1: 0, 2: 0, 3: 0, 4: 0 };
+    var anyFail = false;
     list.forEach(function (a) {
-      var tr = el('tr');
-      tr.appendChild(el('td', '', a.student));
-      tr.appendChild(el('td', a.ok ? 'ok' : 'bad', a.ok ? 'Correcto' : 'Error'));
-      var tdErr = el('td');
-      if (a.errorCode) {
-        var t = errorTexts[a.errorCode];
-        tdErr.appendChild(el('span', '', t ? t.title : a.errorCode));
-        if (a.explanation) tdErr.appendChild(el('span', 'explain', a.explanation));
-      } else {
-        tdErr.textContent = '-';
-      }
-      tr.appendChild(tdErr);
-      tr.appendChild(el('td', 'num', a.step + (STEP_NAMES[a.step] ? ' - ' + STEP_NAMES[a.step] : '')));
-      tr.appendChild(el('td', 'num', Number(a.seconds).toFixed(1)));
-      tr.appendChild(el('td', 'num', new Date(a.serverTime).toLocaleTimeString('es-BO')));
-      rows.appendChild(tr);
+      if (a.ok) return;
+      anyFail = true;
+      if (byStep[a.step] !== undefined) byStep[a.step] += 1;
     });
-    document.getElementById('empty').style.display = list.length ? 'none' : 'block';
+    drawChart(byStep, anyFail);
+
+    var shown = projector ? list.slice(0, 5) : list;
+    var tags = document.getElementById('tags');
+    tags.textContent = '';
+    shown.forEach(function (a) {
+      var fresh = !firstPaint && a.id && !seen[a.id];
+      var card = el('article', 'tag ' + (a.ok ? 'complete' : 'fail'));
+      if (fresh) card.classList.add('is-new');
+      card.appendChild(el('span', 'hole'));
+      var body = el('div');
+      body.appendChild(el('p', 'who', a.student || 'Sin nombre'));
+      if (a.ok) {
+        body.appendChild(el('p', 'result ok', 'Completo'));
+      } else {
+        var where = 'Paso ' + a.step;
+        var named = stepName(a.step);
+        if (named) where += ' · ' + named;
+        body.appendChild(el('p', 'result bad', where));
+        var errTitle = a.errorCode
+          ? (errorTexts[a.errorCode] ? errorTexts[a.errorCode].title : a.errorCode)
+          : '';
+        if (errTitle) body.appendChild(el('p', 'result bad', errTitle));
+        if (a.explanation) body.appendChild(el('p', 'explain', a.explanation));
+      }
+      card.appendChild(body);
+      var meta = el('p', 'meta');
+      meta.appendChild(el('span', '', Number(a.seconds).toFixed(1) + ' s'));
+      meta.appendChild(document.createElement('br'));
+      meta.appendChild(el('span', '', clock(a.serverTime || a.clientTime)));
+      card.appendChild(meta);
+      tags.appendChild(card);
+    });
+
+    var nextSeen = Object.create(null);
+    list.forEach(function (a) { if (a.id) nextSeen[a.id] = true; });
+    seen = nextSeen;
+    firstPaint = false;
+    document.getElementById('empty').hidden = list.length > 0;
   }
 
   function setStatus(up) {
     var s = document.getElementById('status');
-    s.textContent = up ? 'en vivo - ' + new Date().toLocaleTimeString('es-BO') : 'sin conexión con el servidor';
+    if (!s) return;
+    s.textContent = up ? 'En vivo · ' + clock(new Date().toISOString()) : 'Sin conexión con el servidor';
     s.className = up ? '' : 'down';
   }
 
   function refresh() {
-    fetch('/api/attempts').then(function (r) { return r.json(); })
-      .then(function (list) { render(list); setStatus(true); })
+    fetch('/api/attempts')
+      .then(function (r) {
+        if (!r.ok) throw new Error('http');
+        return r.json();
+      })
+      .then(function (list) {
+        if (!Array.isArray(list)) throw new Error('shape');
+        render(list);
+        setStatus(true);
+      })
       .catch(function () { setStatus(false); });
   }
 
+  var dialog = document.getElementById('confirm');
   document.getElementById('clear').addEventListener('click', function () {
-    if (!confirm('¿Borrar todos los intentos? No se puede deshacer.')) return;
-    fetch('/api/attempts', { method: 'DELETE' }).then(refresh);
+    dialog.showModal();
+  });
+  document.getElementById('cancel').addEventListener('click', function () {
+    dialog.close();
+  });
+  document.getElementById('do-clear').addEventListener('click', function () {
+    fetch('/api/attempts', { method: 'DELETE' })
+      .then(function () { dialog.close(); refresh(); })
+      .catch(function () { setStatus(false); });
   });
 
-  fetch('/api/errors').then(function (r) { return r.json(); })
-    .then(function (t) { errorTexts = t; })
+  fetch('/api/errors')
+    .then(function (r) { return r.json(); })
+    .then(function (t) { errorTexts = t || {}; })
     .catch(function () {})
-    .then(function () { refresh(); setInterval(refresh, 2000); });
+    .then(function () {
+      refresh();
+      setInterval(refresh, 2000);
+    });
 </script>
 </body>
 </html>

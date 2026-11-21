@@ -28,6 +28,8 @@ namespace Loto.EditorTools
             var managerData = new SerializedObject(manager);
             // Floor level: y = 0 is the real floor, so the table top is at 0.90 m for everybody.
             managerData.FindProperty("_trackingOriginType").intValue = (int)OVRManager.TrackingOrigin.FloorLevel;
+            // Real-surface placement (TablePlacer) reads the depth sensor: it needs the scene permission at start.
+            managerData.FindProperty("requestScenePermissionOnStartup").boolValue = true;
             managerData.ApplyModifiedPropertiesWithoutUndo();
 
             // In this SDK version the passthrough layer is always the background (underlay).
@@ -60,11 +62,45 @@ namespace Loto.EditorTools
                 projectConfig.enableNSCConfig = false;
                 changed = true;
             }
+            if (projectConfig.sceneSupport == OVRProjectConfig.FeatureSupport.None)
+            {
+                projectConfig.sceneSupport = OVRProjectConfig.FeatureSupport.Supported;
+                changed = true;
+            }
+            if (projectConfig.anchorSupport != OVRProjectConfig.AnchorSupport.Enabled)
+            {
+                projectConfig.anchorSupport = OVRProjectConfig.AnchorSupport.Enabled;
+                changed = true;
+            }
             if (changed) OVRProjectConfig.CommitProjectConfig(projectConfig);
 
             // With controllers (no tracked hand) the fingertip spheres follow the controller anchors.
             Wire(parts.leftTip, "fallbackAnchor", FindChild(rig.transform, "LeftControllerAnchor"));
             Wire(parts.rightTip, "fallbackAnchor", FindChild(rig.transform, "RightControllerAnchor"));
+
+            // The board stands on a real table or bench when the depth sensor finds one (TablePlacer).
+            var raycaster = rig.AddComponent<Meta.XR.EnvironmentRaycastManager>();
+            var placer = new GameObject("TablePlacer").AddComponent<TablePlacer>();
+            placer.board = parts.board;
+            StatusPanel statusPanel = Object.FindAnyObjectByType<StatusPanel>();
+            placer.panel = statusPanel != null ? statusPanel.transform : null;
+            placer.head = FindChild(rig.transform, "CenterEyeAnchor");
+            placer.rightController = FindChild(rig.transform, "RightControllerAnchor");
+            placer.leftController = FindChild(rig.transform, "LeftControllerAnchor");
+            placer.raycaster = raycaster;
+            Transform tableTop = FindChild(parts.board, "TableTop"), tableLeg = FindChild(parts.board, "TableLeg");
+            placer.drawnTable = new[] { tableTop != null ? tableTop.gameObject : null, tableLeg != null ? tableLeg.gameObject : null };
+            placer.tableTop = TableTop;
+            placer.tableDistance = TableDistance;
+
+            // A QR code stuck on the real table anchors the board there (QrPlacer). MRUK only tracks QR codes here:
+            // it does not load the room, so no space scan is needed.
+            var mrukObject = new GameObject("MRUK");
+            var mruk = mrukObject.AddComponent<Meta.XR.MRUtilityKit.MRUK>();
+            if (mruk.SceneSettings == null) mruk.SceneSettings = new Meta.XR.MRUtilityKit.MRUK.MRUKSettings();
+            mruk.SceneSettings.LoadSceneOnStartup = false;
+            var qrPlacer = mrukObject.AddComponent<QrPlacer>();
+            qrPlacer.placer = placer;
 
             parts.rig = rig;
         }

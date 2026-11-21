@@ -12,7 +12,8 @@ const crypto = require('crypto');
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = '0.0.0.0';
 const MAX_BODY = 64 * 1024; // bytes
-const INDEX_FILE = path.join(__dirname, 'public', 'index.html');
+const INDEX_FILE = path.join(__dirname, '..', 'web', 'index.html');
+const MACHINE_FILE = path.join(__dirname, '..', 'public', 'Motoreductor 3D — Componente LOTO.html');
 
 // In-memory store, newest first. Restarting the server clears it.
 const attempts = [];
@@ -187,6 +188,10 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, fs.readFileSync(INDEX_FILE), 'text/html; charset=utf-8');
     }
 
+    if (route === 'GET /maquina.html') {
+      return send(res, 200, fs.readFileSync(MACHINE_FILE), 'text/html; charset=utf-8');
+    }
+
     return sendJson(res, 404, { error: 'not found' });
   } catch (e) {
     console.error(e);
@@ -204,5 +209,6 @@ server.on('error', (e) => {
 
 server.listen(PORT, HOST, () => {
   console.log('LOTO mock server (TEST only) on http://localhost:' + PORT);
-  console.log('Teacher panel: http://localhost:' + PORT + '/   - from the headset use http://<laptop-ip>:' + PORT);
+  console.log('Page: http://localhost:' + PORT + '/   panel: /#estadisticas   pitch: /?proyector=1');
+  console.log('From the headset use http://<laptop-ip>:' + PORT);
 });
