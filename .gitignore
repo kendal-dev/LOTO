@@ -51,3 +51,7 @@ Thumbs.db
 Desktop.ini
 .vs/
 .idea/
+
+# --- Pitch: local photos (consent) and Claude Code local config ---
+pitch/presentacion/img/local/
+.claude/
