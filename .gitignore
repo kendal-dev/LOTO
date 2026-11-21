@@ -59,3 +59,4 @@ pitch/presentacion/img/local/
 # --- Meta Immersive Debugger: local access token and LAN address (H104) ---
 unity/Assets/Resources/DevAgentSettings.asset
 unity/Assets/Resources/DevAgentSettings.asset.meta
+unity/TempAssembly.dll
