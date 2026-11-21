@@ -35,6 +35,9 @@ Escrito el viernes 20/11, 15:00. **Unity todavía no abrió este proyecto ni una
 8. Build al Quest: menú **Loto > Build APK** (sale `Builds\loto.apk`), o con Unity cerrado
    `powershell -ExecutionPolicy Bypass -File Tools\build.ps1 -Install`.
    Instalar a mano: `adb install -r Builds\loto.apk`.
+   Mesa real: al abrir, el visor pide permiso para los datos del espacio (aceptar). El tablero se apoya en la mesa
+   que se mira (o con **B**/**Y** del control donde se apunta), o **sobre un código QR pegado en la mesa** (cualquier
+   QR; uno que diga `LOTO` tiene prioridad). El registro dice `[Loto] Board placed ... (QR code | gaze | controller)`.
    Etapas: menú **Loto > Etapas...** guarda cada APK con nombre y hora en `Builds\etapas\` (fuera de git) y la
    reinstala en el Quest con un botón, para mostrar cómo avanzó el trabajo. Solo editor: no cambia la escena.
 9. Dirección del servidor en el visor (la app se abre una vez antes, para que exista la carpeta):
