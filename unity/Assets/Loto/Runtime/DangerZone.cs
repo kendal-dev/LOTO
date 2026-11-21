@@ -17,7 +17,9 @@ namespace Loto
 
         void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponent<FingerTip>() == null) return;
+            FingerTip tip = other.GetComponent<FingerTip>();
+            // Putting the headset on (recenter, hand found again) makes the sphere jump: not a touch.
+            if (tip == null || tip.JustArrived) return;
             Touch();
         }
 

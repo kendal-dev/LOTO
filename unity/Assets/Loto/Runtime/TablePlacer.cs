@@ -37,6 +37,7 @@ namespace Loto
         Quaternion _panelLocalRotation = Quaternion.identity;
         float _startTime;
         float _nextTry;
+        float _nextLog;
 
         void Start()
         {
@@ -81,9 +82,11 @@ namespace Loto
         void TryPlace(Ray ray, bool manual)
         {
             EnvironmentRaycastHit hit;
+            bool say = manual || Time.time >= _nextLog;
+            if (say && !manual) _nextLog = Time.time + 3f;
             if (!raycaster.Raycast(ray, out hit, 3f))
             {
-                if (manual) Debug.Log("[Loto] Placement: no surface (" + hit.status + ").");
+                if (say) Debug.Log("[Loto] Placement: no surface (" + hit.status + ").");
                 return;
             }
             // Floor-level origin: y is the height above the real floor.
@@ -91,7 +94,7 @@ namespace Loto
             bool tableHeight = hit.point.y >= minHeight && hit.point.y <= maxHeight;
             if (!flat || !tableHeight)
             {
-                if (manual) Debug.Log("[Loto] Placement: not a table (height " + hit.point.y.ToString("F2") + " m, flat " + flat + ").");
+                if (say) Debug.Log("[Loto] Placement: not a table (height " + hit.point.y.ToString("F2") + " m, flat " + flat + ").");
                 return;
             }
 

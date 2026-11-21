@@ -39,7 +39,8 @@ namespace Loto
 
         void OnTriggerEnter(Collider other)
         {
-            if (other.GetComponent<FingerTip>() == null) return;
+            FingerTip tip = other.GetComponent<FingerTip>();
+            if (tip == null || tip.JustArrived) return;   // a jump in tracking is not a press
             Press();
         }
 
