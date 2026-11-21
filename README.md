@@ -2,7 +2,7 @@
 
 **Práctica de bloqueo y etiquetado (LOTO, *lockout/tagout*) para estudiantes de taller, en Meta Quest 3.**
 La máquina aparece en el aula real, sin aislar al estudiante en un mundo virtual (realidad mixta) y el docente ve cada
-intento en vivo desde un panel web.
+intento desde un panel web.
 
 Proyecto del hackathon **Abstracthon 2026** (Microsoft Learn Student Ambassadors Bolivia, 21-22/11/2026),
 track Educación. Equipo de Santa Cruz de la Sierra: Daniel, Denzel y Orlando. [PENDIENTE: nombre del equipo]
@@ -66,13 +66,13 @@ virtual cerrada** (el estudiante está en una planta virtual) y se venden a empr
 
 - **Realidad mixta en el taller real:** en los que revisamos, ninguno pone la máquina en el aula real, sin aislar al estudiante en un mundo virtual.
 - **El alfiler aparece solo después del error**, en vez de separar «modo guiado» y «modo examen».
-- **El docente ve la clase en vivo**, sin un sistema de gestión de aprendizaje (LMS).
+- **El docente ve cada intento de la clase en un panel web**, sin un sistema de gestión de aprendizaje (LMS).
 - **La tarjeta dice quién bloqueó y a qué hora**, porque el reglamento de COMIBOL (2023) dice que el bloqueo lo retira quien lo colocó.
 
 Ya hay formación técnica inmersiva en la región: Yoy Simulators trabaja con Duoc UC (Chile) con más de 3.000
 estudiantes y Meta Quest ([nota del 21/01/2026](https://www.mineriayfuturo.cl/noticias/chile-impulsa-el-mayor-proyecto-de-capacitacion-tecnica-virtual-de-latinoamerica-con-realidad-virtual/)),
 y en Bolivia existen simuladores técnicos como los de Mi Teleférico e IA Technology. Lo nuestro no es ser los
-primeros en usar simulación, sino **llevar la práctica al taller real y darle los datos al docente en vivo**.
+primeros en usar simulación, sino **llevar la práctica al taller real y darle los datos al docente en un panel web**.
 En Santa Cruz no encontramos ningún simulador inmersivo de formación técnica.
 
 **El equipo ya lo hizo una vez:** el 14-15/11/2026, en la misma UCB, el equipo MARSXR (del que forman parte Daniel
