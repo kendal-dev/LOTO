@@ -53,6 +53,13 @@ namespace Loto.EditorTools
                 projectConfig.handTrackingSupport = OVRProjectConfig.HandTrackingSupport.ControllersAndHands;
                 changed = true;
             }
+            // Meta's network security config sets cleartextTrafficPermitted="false" and overrides
+            // usesCleartextTraffic, which would block the plain-http POST to the teacher's server.
+            if (projectConfig.enableNSCConfig)
+            {
+                projectConfig.enableNSCConfig = false;
+                changed = true;
+            }
             if (changed) OVRProjectConfig.CommitProjectConfig(projectConfig);
 
             // With controllers (no tracked hand) the fingertip spheres follow the controller anchors.
