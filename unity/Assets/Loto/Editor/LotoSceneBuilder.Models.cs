@@ -269,7 +269,26 @@ namespace Loto.EditorTools
                 machines[i] = group.gameObject;
             }
             if (RealScaleMachines)
+            {
                 foreach (GameObject g in machines) AddGround(machine, g);
+                for (int i = 0; i < machines.Count; i++)
+                {
+                    bool press = names[i] == "PRENSA", air = names[i] == "NEUMÁTICA";
+                    AddSign(machine, machines[i], press || air ? "PELIGRO\n<size=44>ENERGÍA ALMACENADA</size>" : "PELIGRO\n<size=44>PARTES EN MOVIMIENTO</size>");
+                    if (!press && !air) continue;
+                    // The jet comes out of the valve the student would open: the press's red bleed knob, the station's exhaust.
+                    Transform valve = FindChild(machines[i].transform, press ? "BleedValvePivot" : "ExhaustValve");
+                    if (valve == null) continue;
+                    Transform emitter = Group("PurgeEmitter", machine, machine.InverseTransformPoint(
+                        valve.GetComponentInChildren<Renderer>() != null ? valve.GetComponentInChildren<Renderer>().bounds.center : valve.position));
+                    emitter.SetParent(machines[i].transform, true);
+                    var jet = machines[i].AddComponent<PurgeJet>();
+                    jet.zone = dz;
+                    jet.emitter = emitter;
+                    jet.color = press ? new Color(0.86f, 0.74f, 0.42f) : new Color(0.92f, 0.94f, 0.96f);
+                    jet.size = press ? 0.025f : 0.035f;
+                }
+            }
 
             if (trigger != null)
             {
@@ -312,6 +331,19 @@ namespace Loto.EditorTools
             GameObject disc = Part(PrimitiveType.Cylinder, "Ground", machine, new Vector3(b.center.x, 0.002f, b.center.z),
                 new Vector3(b.size.x * 1.12f, 0.001f, b.size.z * 1.12f), ground);
             disc.transform.SetParent(group.transform, true);
+        }
+
+        /// <summary>A yellow danger sign with black text on the machine's front, upper right (opaque plate behind).</summary>
+        static void AddSign(Transform machine, GameObject group, string text)
+        {
+            Bounds b = LocalBounds(machine, group);
+            Material yellow = MakeMaterial("DangerSign", "Universal Render Pipeline/Unlit", new Color(0.98f, 0.78f, 0.05f), 0f);
+            Vector3 at = new Vector3(b.center.x + b.size.x * 0.22f, Mathf.Max(0.6f, b.max.y * 0.62f), b.min.z - 0.012f);
+            Transform sign = Group("DangerSign", group.transform, Vector3.zero);
+            sign.position = machine.TransformPoint(at);
+            sign.rotation = machine.rotation;
+            Part(PrimitiveType.Quad, "Plate", sign, new Vector3(0f, 0f, 0.002f), new Vector3(0.34f, 0.20f, 1f), yellow);
+            Label(sign, "Text", text, new Vector3(0f, 0f, -0.001f), Quaternion.identity, 640, 360, 0.32f, 72, new Color(0.05f, 0.05f, 0.05f));
         }
 
         public const string SeccionadorPath = "Assets/ThirdParty/Seccionador/Seccionador.fbx";

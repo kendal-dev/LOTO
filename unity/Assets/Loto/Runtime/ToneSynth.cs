@@ -26,6 +26,22 @@ namespace Loto
             return Make("Hum", data);
         }
 
+        /// <summary>PURGAR: air or oil escaping, a soft noise, 1 s that loops (no fade: noise hides the seam).</summary>
+        public static AudioClip Hiss()
+        {
+            int rate = Rate;
+            var data = new float[rate];
+            var random = new System.Random(11);
+            float low = 0f;
+            for (int i = 0; i < data.Length; i++)
+            {
+                float white = (float)random.NextDouble() * 2f - 1f;
+                low += (white - low) * 0.35f;              // a little low-pass: a hiss, not a crackle
+                data[i] = (white - low * 0.5f) * 0.22f;
+            }
+            return Make("Hiss", data);
+        }
+
         /// <summary>A correct step: a short high ping.</summary>
         public static AudioClip Ping()
         {

@@ -29,6 +29,8 @@ namespace Loto
         [Tooltip("The handle is a bleed valve: it opens on PURGAR instead of closing with the lever.")]
         public bool handleOnBleed;
 
+        bool _failSeen, _slam;
+        float _slamT;
         Vector3 _slideRest;
         Quaternion _needleRest, _handleRest;
         float _phase, _closed;
@@ -43,7 +45,25 @@ namespace Loto
         void Update()
         {
             float energy = zone != null ? zone.Speed : 0f;
-            if (slider != null)
+            // A touch that stops the attempt with energy in (lever up, or pressure not bled): the ram or the rod
+            // slams down at once. What would have happened to the hand. Looks only: the Referee already decided.
+            bool failed = zone != null && zone.session != null && zone.session.Referee != null && zone.session.Referee.Failed;
+            if (failed && !_failSeen)
+            {
+                _failSeen = true;
+                _slam = (zone.lever != null && !zone.lever.IsOff) || (zone.holdsPressure && !zone.Bled);
+            }
+            else if (!failed)
+            {
+                _failSeen = false;
+                _slam = false;
+            }
+            _slamT = Mathf.MoveTowards(_slamT, _slam ? 1f : 0f, Time.deltaTime / (_slam ? 0.12f : 0.8f));
+            if (slider != null && _slamT > 0f)
+            {
+                slider.localPosition = _slideRest + slideOffset * _slamT;
+            }
+            else if (slider != null)
             {
                 // The pump or the compressor drives the stroke only while the lever is up; the stored pressure then
                 // holds the ram where it stopped until PURGAR lets it out.
