@@ -63,7 +63,7 @@ namespace Loto
             if (string.IsNullOrEmpty(baseUrl)) return;
             Referee referee = session.Referee;
             string json = BuildJson(session.SessionId, session.StudentName, referee.Completed, referee.FailCode,
-                referee.CurrentStep, session.Seconds, referee.History, DateTime.UtcNow);
+                referee.CurrentStep, session.Seconds, referee.History, DateTime.UtcNow, MachineName());
             _sendSerial++;
             StartCoroutine(Post(json, _sendSerial));
         }
@@ -101,8 +101,17 @@ namespace Loto
         }
 
         /// <summary>The contract's JSON, written by hand so errorCode can be a real null.</summary>
+        /// <summary>The machine on the table (MachineSelector), or null in a scene with one machine.</summary>
+        static string MachineName()
+        {
+            MachineSelector selector = UnityEngine.Object.FindAnyObjectByType<MachineSelector>();
+            if (selector == null || selector.names == null || selector.Current >= selector.names.Length) return null;
+            return selector.names[selector.Current];
+        }
+
+        /// <summary>machine: optional ninth field (CONTRATO §1), left out when null.</summary>
         public static string BuildJson(string sessionId, string student, bool ok, string errorCode, int step,
-            float seconds, IReadOnlyList<LotoAction> actions, DateTime utcNow)
+            float seconds, IReadOnlyList<LotoAction> actions, DateTime utcNow, string machine = null)
         {
             var json = new StringBuilder(256);
             json.Append("{\"session\":").Append(Quote(sessionId));
@@ -118,6 +127,7 @@ namespace Loto
                 json.Append(Quote(actions[i].ToString()));
             }
             json.Append("],\"clientTime\":").Append(Quote(utcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture)));
+            if (machine != null) json.Append(",\"machine\":").Append(Quote(machine));
             json.Append('}');
             return json.ToString();
         }

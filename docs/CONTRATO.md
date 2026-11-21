@@ -33,7 +33,8 @@ cuando un error frena la simulación.
   "step": 2,
   "seconds": 12.4,
   "actions": ["LeverOff", "TouchMachine"],
-  "clientTime": "2026-11-21T14:05:31Z"
+  "clientTime": "2026-11-21T14:05:31Z",
+  "machine": "PRENSA"
 }
 ```
 
@@ -47,8 +48,12 @@ Respuesta `200` o `201`:
 Si el JSON viene mal o falta `ok`, `400 { "error": "..." }`. El servidor de prueba
 responde `413` si el cuerpo pasa de 64 KB.
 
+`machine` (agregado el 21/11 a la tarde) es **opcional**: la máquina del escenario, `"MOLINO"`, `"PRENSA"` o
+`"NEUMÁTICA"`. Un servidor que no lo conoce lo ignora; uno que lo usa (la explicación con IA) adapta el texto a la
+máquina. Si no viene, la máquina es el molino.
+
 Cómo lo arma hoy el visor (`AttemptSender.BuildJson`): los ocho campos, siempre y en
-ese orden; `errorCode` es un `null` de verdad cuando no hubo error; `seconds` con un
+ese orden, más `machine` al final cuando hay varias máquinas; `errorCode` es un `null` de verdad cuando no hubo error; `seconds` con un
 decimal y punto (`12.4`); `clientTime` en UTC con el formato `2026-11-21T14:05:31Z`;
 `student` es `"Estudiante N"` y `session`, si nadie la define, `"sesion-AAAA-MM-DD"`.
 El visor espera 5 segundos; si no hay respuesta sigue con su propio texto.
